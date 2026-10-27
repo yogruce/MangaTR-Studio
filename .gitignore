@@ -1,0 +1,45 @@
+# Python & Virtual Environment
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environment & Secrets (Asla GitHub'a yüklenmez)
+.env
+.env.local
+*.key
+
+# Large AI Model Weights (setup_project.py veya ilk çalıştırmada otomatik indirilir)
+*.pt
+*.pth
+*.onnx
+*.ckpt
+*.part
+models/*
+!models/.gitkeep
+vendor/comic-text-detector/models/*
+!vendor/comic-text-detector/models/.gitkeep
+vendor/comic-text-detector/data/models/*
+
+# Proprietary Windows System Fonts (setup_project.py yerel sistemden kopyalar, GitHub'a sadece açık kaynak OFL fontlar yüklenir)
+fonts/ComicSansMS*.ttf
+
+# Generated Outputs & Temporary Files
+output/*
+!output/.gitkeep
+temp/*
+!temp/.gitkeep
+
+# PyInstaller / Build Artifacts
+build/
+dist/
+*.spec
+
+# IDE & OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

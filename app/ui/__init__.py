@@ -1,0 +1,1 @@
+"""MangaTR-Studio UI package."""

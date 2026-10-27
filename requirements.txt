@@ -1,0 +1,16 @@
+# MangaTR-Studio Python Dependencies
+# Not: NVIDIA GPU (CUDA) hızlandırması için PyTorch'u https://pytorch.org üzerinden
+# kendi CUDA sürümünüze uygun olarak da kurabilirsiniz.
+torch>=2.1.0
+torchvision>=0.16.0
+easyocr>=1.7.1
+opencv-python>=4.8.0
+numpy>=1.24.0
+Pillow>=10.0.0
+scipy>=1.11.0
+scikit-image>=0.21.0
+shapely>=2.0.0
+pyclipper>=1.3.0
+tqdm>=4.66.0
+pyyaml>=6.0
+einops>=0.7.0
