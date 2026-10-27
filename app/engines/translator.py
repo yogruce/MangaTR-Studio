@@ -2,9 +2,9 @@
 MangaTR-Studio - Context-Aware Manga Translation Engine (app/engines/translator.py)
 
 Supports:
-1. Local LLM (Ollama / LM Studio / llama.cpp OpenAI-compatible server) - 100% offline & context-aware
-2. Free Web GTX Batch + Manga Localization Post-Processor - zero API key, fast for 400+ chapters
-3. Optional Gemini API - if user configures an API key
+1. Local LLM (Ollama / LM Studio / llama.cpp) - 100% offline & full-page context-aware
+2. Optional Gemini API / OpenAI-Compatible API (DeepSeek / OpenRouter / GPT-4o) - full-page context-aware
+3. Free Web GTX Batch + Universal Manga Context & Proper-Noun Protector - zero API key, works across all series
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ import re
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set, Tuple
 
 from app.config import TranslatorConfig
 
@@ -26,6 +26,149 @@ class TranslationItem:
     translated_text: str
     backend_used: str
 
+
+# ---------------------------------------------------------------------------
+# 1. Universal Untranslatable Manga / Manhwa / Webtoon / Anime Terms
+#    (Kept in original form across ALL series so "One Piece" != "Tek Parça", etc.)
+# ---------------------------------------------------------------------------
+UNIVERSAL_PROTECTED_TERMS: Dict[str, str] = {
+    # Iconic Titles & World Terms (Keep Untranslated)
+    "One Piece": "One Piece",
+    "Grand Line": "Grand Line",
+    "New World": "New World",
+    "Calm Belt": "Calm Belt",
+    "Red Line": "Red Line",
+    "Laugh Tale": "Laugh Tale",
+    "Poneglyph": "Poneglyph",
+    "Road Poneglyph": "Road Poneglyph",
+    "Mariejois": "Mariejois",
+    "Yonko": "Yonko",
+    "Shichibukai": "Shichibukai",
+    "Gorosei": "Gorosei",
+    "Wano": "Wano",
+    "Elbaf": "Elbaf",
+    "Haki": "Haki",
+    "Haoshoku Haki": "Haoshoku Haki",
+    "Busoshoku Haki": "Busoshoku Haki",
+    "Kenbunshoku Haki": "Kenbunshoku Haki",
+    "Gear Second": "Gear Second",
+    "Gear Third": "Gear Third",
+    "Gear Fourth": "Gear Fourth",
+    "Gear Fifth": "Gear Fifth",
+    "Gear 5": "Gear 5",
+    # Bleach / Shinigami terms
+    "Bankai": "Bankai",
+    "Shikai": "Shikai",
+    "Zanpakuto": "Zanpakuto",
+    "Getsuga Tensho": "Getsuga Tensho",
+    "Hueco Mundo": "Hueco Mundo",
+    "Soul Society": "Soul Society",
+    "Gotei 13": "Gotei 13",
+    "Espada": "Espada",
+    "Arrancar": "Arrancar",
+    "Quincy": "Quincy",
+    "Reiatsu": "Reiatsu",
+    "Shinigami": "Shinigami",
+    # Naruto / Ninja terms
+    "Sharingan": "Sharingan",
+    "Mangekyo Sharingan": "Mangekyo Sharingan",
+    "Byakugan": "Byakugan",
+    "Rinnegan": "Rinnegan",
+    "Rasengan": "Rasengan",
+    "Chidori": "Chidori",
+    "Chakra": "Chakra",
+    "Jutsu": "Jutsu",
+    "Ninjutsu": "Ninjutsu",
+    "Genjutsu": "Genjutsu",
+    "Taijutsu": "Taijutsu",
+    "Dojutsu": "Dojutsu",
+    "Kekkei Genkai": "Kekkei Genkai",
+    "Hokage": "Hokage",
+    "Kazekage": "Kazekage",
+    "Raikage": "Raikage",
+    "Mizukage": "Mizukage",
+    "Tsuchikage": "Tsuchikage",
+    "Akatsuki": "Akatsuki",
+    "Shinobi": "Shinobi",
+    "Jinchuriki": "Jinchuriki",
+    "Konoha": "Konoha",
+    # Hunter x Hunter / JJK / DBZ / MHA / JoJo / General Shonen
+    "Nen": "Nen",
+    "Zetsu": "Zetsu",
+    "Hatsu": "Hatsu",
+    "Zoldyck": "Zoldyck",
+    "Kurapika": "Kurapika",
+    "Killua": "Killua",
+    "Leorio": "Leorio",
+    "Hisoka": "Hisoka",
+    "Chrollo": "Chrollo",
+    "Kamehameha": "Kamehameha",
+    "Saiyan": "Saiyan",
+    "Super Saiyan": "Super Saiyan",
+    "Kaioken": "Kaioken",
+    "Quirk": "Quirk",
+    "Plus Ultra": "Plus Ultra",
+    "One For All": "One For All",
+    "All For One": "All For One",
+    "Shikigami": "Shikigami",
+    "Black Flash": "Black Flash",
+    "Hollow Purple": "Hollow Purple",
+    "Grimoire": "Grimoire",
+    "Hamon": "Hamon",
+    # Korean Manhwa / Murim / System / Webtoon terms
+    "Murim": "Murim",
+    "Dantian": "Dantian",
+    "Mana": "Mana",
+    "Aura": "Aura",
+    "Chaebol": "Chaebol",
+    "Oppa": "Oppa",
+    "Hyung": "Hyung",
+    "Noona": "Noona",
+    "Unnie": "Unnie",
+    "Sunbae": "Sunbae",
+    "Hoobae": "Hoobae",
+    "Ahjussi": "Ahjussi",
+    "Ahjumma": "Ahjumma",
+    # Japanese Honorifics & Cultural Terms
+    "Senpai": "Senpai",
+    "Sensei": "Sensei",
+    "Sama": "Sama",
+    "Kun": "Kun",
+    "Chan": "Chan",
+    "Dono": "Dono",
+    "Aniki": "Aniki",
+    "Nakama": "Nakama",
+    "Yokai": "Yokai",
+    "Kaiju": "Kaiju",
+    "Isekai": "Isekai",
+    # Common Manga/Manhwa Genre Terms with Official Turkish Scanlation Equivalents
+    "Devil Fruit": "Şeytan Meyvesi",
+    "Straw Hat": "Hasır Şapka",
+    "Soul Reaper": "Ruh Tırpancısı",
+    "Domain Expansion": "Alan Genişletme",
+    "Cursed Energy": "Lanetli Enerji",
+    "Cursed Technique": "Lanetli Teknik",
+    "Shadow Monarch": "Gölge Hükümdarı",
+    "Heavenly Demon": "Göksel İblis",
+    "Martial Arts": "Dövüş Sanatları",
+    "Survey Corps": "Keşif Birliği",
+    "Demon Slayer": "İblis Keser",
+}
+
+# Common English words that follow titles or appear in ALL-CAPS so we don't mistake them for proper names
+_COMMON_ENGLISH_STOPWORDS: Set[str] = {
+    "THE", "AND", "FOR", "ARE", "BUT", "NOT", "YOU", "ALL", "ANY", "CAN", "HAD", "HER", "WAS",
+    "ONE", "OUR", "OUT", "DAY", "GET", "HAS", "HIM", "HIS", "HOW", "MAN", "NEW", "NOW", "OLD",
+    "SEE", "TWO", "WAY", "WHO", "BOY", "DID", "ITS", "LET", "PUT", "SAY", "SHE", "TOO", "USE",
+    "DAD", "MOM", "KID", "GUY", "MEN", "GOD", "SIR", "YES", "YEA", "YEAH", "NO", "HEY", "WOW",
+    "WHAT", "WHEN", "WHERE", "WHICH", "WHILE", "WHOSE", "WHY", "WITH", "WITHOUT", "WITHIN",
+    "THIS", "THAT", "THESE", "THOSE", "THERE", "THEIR", "THEM", "THEN", "THAN", "THEY",
+    "HAVE", "HERE", "FROM", "INTO", "OVER", "SOME", "SUCH", "TAKE", "TIME", "VERY", "WELL",
+    "WERE", "WILL", "YOUR", "ABOUT", "AFTER", "AGAIN", "BEING", "COULD", "EVERY", "FIRST",
+    "GREAT", "NEVER", "OTHER", "RIGHT", "SHALL", "SINCE", "STILL", "THREE", "UNDER", "UNTIL",
+    "WATER", "WHERE", "WORLD", "WOULD", "YEARS", "YOUNG", "STORM", "SPEED", "HOURS", "GUESS",
+    "TRADE", "SHIP", "STEER", "ISLAND", "WHALE", "HUNTER", "CAPTAIN", "MASTER", "LORD", "KING",
+}
 
 # Conversational manga English pre-normalization for better translation quality
 _MANGA_SLANG_PREMAP = [
@@ -65,10 +208,11 @@ _TURKISH_MANGA_REFINEMENTS = [
 
 class MangaTranslator:
     """
-    Context-aware page translator with glossary support and automatic fallback across:
-    - Local Ollama / OpenAI-compatible LLM
-    - Optional Gemini API
-    - Free GTX Web Translator + Manga Scanlation Post-Processor
+    Context-aware page translator with universal proper-noun/manga-term protection,
+    page-level discourse analysis, and automatic fallback across:
+    - Local Ollama LLM
+    - Optional Gemini API / OpenAI-compatible API
+    - Free GTX Web Translator + Universal Manga Context & Term Protector
     """
 
     def __init__(self, config: Optional[TranslatorConfig] = None) -> None:
@@ -81,12 +225,14 @@ class MangaTranslator:
         custom_glossary: Optional[Dict[str, str]] = None,
     ) -> List[TranslationItem]:
         """
-        Translate all dialogue blocks on a manga page together to preserve context.
-        `blocks` is a list of dicts with at least {"id": int, "text": str}.
+        Translate all dialogue blocks on a manga page together to preserve context
+        and protect series-specific proper nouns/terms across ANY manga/manhwa/comic.
         """
-        glossary = dict(self.config.glossary)
+        # Merge universal protected terms + config glossary + custom project glossary
+        effective_glossary: Dict[str, str] = dict(UNIVERSAL_PROTECTED_TERMS)
+        effective_glossary.update(self.config.glossary)
         if custom_glossary:
-            glossary.update(custom_glossary)
+            effective_glossary.update(custom_glossary)
 
         valid_items = [
             (int(b["id"]), str(b.get("text", "")).strip())
@@ -96,28 +242,34 @@ class MangaTranslator:
         if not valid_items:
             return []
 
+        # Dynamically analyze the page to discover character names, honorifics & special terms
+        dynamic_terms = self._extract_dynamic_protected_terms([txt for _, txt in valid_items])
+        for term in dynamic_terms:
+            if term not in effective_glossary:
+                effective_glossary[term] = term
+
         backend = self.config.backend.lower()
 
         # 1. Try Local LLM (Ollama) if selected or auto
         if backend in ("auto", "local_llm"):
-            llm_res = self._try_ollama_page_translate(valid_items, glossary)
+            llm_res = self._try_ollama_page_translate(valid_items, effective_glossary)
             if llm_res is not None:
                 return llm_res
 
         # 2. Try Gemini API if key is configured
         if backend in ("auto", "gemini_api") and self.config.gemini_api_key.strip():
-            gem_res = self._try_gemini_page_translate(valid_items, glossary)
+            gem_res = self._try_gemini_page_translate(valid_items, effective_glossary)
             if gem_res is not None:
                 return gem_res
 
         # 3. Try OpenAI / OpenAI-Compatible API if key is configured
         if backend in ("auto", "openai_api") and getattr(self.config, "openai_api_key", "").strip():
-            oai_res = self._try_openai_page_translate(valid_items, glossary)
+            oai_res = self._try_openai_page_translate(valid_items, effective_glossary)
             if oai_res is not None:
                 return oai_res
 
-        # 4. Reliable Free Context-Aware GTX + Manga Localization Engine
-        return self._translate_with_gtx_and_refiner(valid_items, glossary)
+        # 4. Reliable Free Full-Page Context-Aware GTX + Manga Localization & Term Protector
+        return self._translate_with_gtx_and_refiner(valid_items, effective_glossary)
 
     def translate_single(
         self,
@@ -127,29 +279,108 @@ class MangaTranslator:
         items = self.translate_page([{"id": 1, "text": text}], custom_glossary=custom_glossary)
         return items[0].translated_text if items else ""
 
+    # ------------------------------------------------------------------
+    # Universal Context & Dynamic Proper-Noun Discovery (All Series)
+    # ------------------------------------------------------------------
+
+    def _extract_dynamic_protected_terms(self, texts: List[str]) -> List[str]:
+        """
+        Automatically detect character names, honorific-attached names, and Japanese/Korean
+        romanized technique/place names from ANY manga/manhwa page without prior configuration.
+        """
+        discovered: List[str] = []
+        full_page_text = " \n ".join(texts)
+
+        # 1. Hyphenated Japanese/Korean Honorific Names: e.g., "Luffy-san", "Naruto-kun", "Gojo-sensei", "Jinwoo-ssi"
+        honorific_pattern = re.compile(
+            r"\b([A-Za-z]{2,15})-(san|kun|chan|sama|sensei|senpai|dono|tan|chama|ssi|nim)\b",
+            re.IGNORECASE,
+        )
+        for match in honorific_pattern.finditer(full_page_text):
+            base_name = match.group(1).capitalize()
+            suffix = match.group(2).lower()
+            full_honorific = f"{base_name}-{suffix}"
+            discovered.append(full_honorific)
+            if base_name.upper() not in _COMMON_ENGLISH_STOPWORDS:
+                discovered.append(base_name)
+
+        # 2. Title + Character/Place Name: e.g., "Lord Aizen", "Captain Levi", "Master Roshi", "Mount Hua"
+        title_name_pattern = re.compile(
+            r"\b(?:Lord|Lady|Captain|General|Admiral|Commander|Master|Doctor|Professor|Prince|Princess|Saint|Duke|Emperor|Mount)\s+([A-Za-z]{3,14})\b",
+            re.IGNORECASE,
+        )
+        for match in title_name_pattern.finditer(full_page_text):
+            candidate = match.group(1)
+            if candidate.upper() not in _COMMON_ENGLISH_STOPWORDS:
+                discovered.append(candidate.capitalize())
+
+        # 3. Japanese & Korean Romanized Morphology Detector (character & skill names in any manga/manhwa)
+        #    Matches distinct JP/KR name suffixes like -maru, -suke, -taro, -kage, -gakure, -jutsu, -giri, -hyun, -woo, -seok
+        jp_kr_morph_pattern = re.compile(
+            r"\b([A-Za-z]{2,10}(?:maru|suke|taro|jiro|hiko|kage|gakure|jutsu|giri|zaki|moto|hara|shiro|kaze|ryu|hyun|heon|seok|cheol|hwan|woon))\b",
+            re.IGNORECASE,
+        )
+        for match in jp_kr_morph_pattern.finditer(full_page_text):
+            word = match.group(1)
+            if word.upper() not in _COMMON_ENGLISH_STOPWORDS and len(word) >= 4:
+                discovered.append(word.capitalize())
+
+        # Deduplicate preserving order
+        seen: Set[str] = set()
+        unique_terms: List[str] = []
+        for t in discovered:
+            low = t.lower()
+            if low not in seen:
+                seen.add(low)
+                unique_terms.append(t)
+        return unique_terms
+
+    def _build_llm_context_prompt(
+        self,
+        items: List[Tuple[int, str]],
+        glossary: Dict[str, str],
+    ) -> str:
+        """
+        Build a context-aware prompt for LLM backends (Ollama, Gemini, OpenAI) that instructs
+        the model to analyze the series context and protect untranslatable terms.
+        """
+        full_text_lower = " ".join(txt.lower() for _, txt in items)
+        relevant_glossary = {
+            k: v for k, v in glossary.items() if k.lower() in full_text_lower
+        }
+        glossary_lines = (
+            "\n".join(f"- {k} -> {v}" for k, v in relevant_glossary.items())
+            if relevant_glossary
+            else "- (Sayfa içi özel isimleri ve teknik adlarını koru)"
+        )
+        dialogue_lines = "\n".join(f"[{bid}] {txt}" for bid, txt in items)
+
+        return (
+            "Sen profesyonel bir manga, manhwa ve çizgi roman çevirmenisin (İngilizce -> Türkçe).\n"
+            "Görev ve Bağlam Kuralları:\n"
+            "1. Önce sayfadaki tüm balonları birlikte okuyarak sahnenin bağlamını, hangi esere/evrene ait olduğunu ve konuşanların duygusunu analiz et.\n"
+            "2. Özel eser/seri adlarını (ör. 'One Piece'), özel teknik/saldırı isimlerini (ör. 'Bankai', 'Sharingan', 'Rasengan', 'Haki'), "
+            "karakter adlarını ve Japonca/Korece hitap eklerini (-san, -kun, -chan, -sama, -sensei, Senpai, Hyung, Oppa) ASLA kelimesi kelimesine çevirme (örneğin 'One Piece' -> 'Tek Parça' YAPMA, 'One Piece' olarak bırak).\n"
+            "3. Sadece geçerli bir JSON nesnesi döndür: {\"1\": \"çeviri\", \"2\": \"çeviri\", ...}\n"
+            "4. Ünlem (!!), soru (?!) ve üç noktaları (...) koru.\n"
+            f"5. Bu Sayfada Tespit Edilen Korunacak Terimler & Sözlük:\n{glossary_lines}\n\n"
+            f"Sayfa Diyalogları:\n{dialogue_lines}\n"
+        )
+
+    # ------------------------------------------------------------------
+    # LLM Translation Backends (Ollama, Gemini, OpenAI)
+    # ------------------------------------------------------------------
+
     def _try_ollama_page_translate(
         self,
-        items: List[tuple[int, str]],
+        items: List[Tuple[int, str]],
         glossary: Dict[str, str],
     ) -> Optional[List[TranslationItem]]:
         """Attempt context-aware page translation via local Ollama server."""
         if self._ollama_available is False and self.config.backend == "auto":
             return None
 
-        glossary_lines = "\n".join(f"- {k} -> {v}" for k, v in glossary.items())
-        dialogue_lines = "\n".join(f"[{bid}] {txt}" for bid, txt in items)
-
-        prompt = (
-            "Sen profesyonel bir manga çevirmenisin (İngilizce -> Türkçe).\n"
-            "Aşağıdaki manga sayfasındaki konuşma balonlarını bağlamı koruyarak, doğal, akıcı ve "
-            "karakter duygusunu yansıtan Türkçe manga diline çevir.\n"
-            "Kurallar:\n"
-            "1. Sadece JSON formatında {\"translations\": {\"1\": \"...\", ...}} döndür.\n"
-            "2. Ünlem (!!), soru (?!) ve üç noktaları (...) koru.\n"
-            f"3. Terimler Sözlüğü:\n{glossary_lines}\n\n"
-            f"Diyaloglar:\n{dialogue_lines}\n"
-        )
-
+        prompt = self._build_llm_context_prompt(items, glossary)
         payload = json.dumps(
             {
                 "model": self.config.ollama_model,
@@ -192,7 +423,7 @@ class MangaTranslator:
 
     def _try_gemini_page_translate(
         self,
-        items: List[tuple[int, str]],
+        items: List[Tuple[int, str]],
         glossary: Dict[str, str],
     ) -> Optional[List[TranslationItem]]:
         api_key = self.config.gemini_api_key.strip()
@@ -204,16 +435,7 @@ class MangaTranslator:
             "https://generativelanguage.googleapis.com/v1beta/models/"
             f"{model_name}:generateContent?key={urllib.parse.quote(api_key)}"
         )
-        glossary_lines = "\n".join(f"- {k} -> {v}" for k, v in glossary.items())
-        dialogue_lines = "\n".join(f"[{bid}] {txt}" for bid, txt in items)
-
-        prompt = (
-            "Sen profesyonel bir manga çevirmenisin (İngilizce -> Türkçe).\n"
-            "Bu sayfadaki konuşma balonlarını bağlama uygun, doğal Türkçe manga diline çevir.\n"
-            "Sadece geçerli bir JSON nesnesi döndür: {\"1\": \"çeviri\", \"2\": \"çeviri\", ...}\n"
-            f"Sözlük:\n{glossary_lines}\n\n"
-            f"Metinler:\n{dialogue_lines}"
-        )
+        prompt = self._build_llm_context_prompt(items, glossary)
 
         body = json.dumps(
             {
@@ -231,9 +453,7 @@ class MangaTranslator:
             )
             with urllib.request.urlopen(req, timeout=12.0) as resp:
                 res_json = json.loads(resp.read().decode("utf-8"))
-                content_text = (
-                    res_json["candidates"][0]["content"]["parts"][0]["text"]
-                )
+                content_text = res_json["candidates"][0]["content"]["parts"][0]["text"]
                 trans_map = json.loads(content_text)
                 if "translations" in trans_map and isinstance(trans_map["translations"], dict):
                     trans_map = trans_map["translations"]
@@ -257,7 +477,7 @@ class MangaTranslator:
 
     def _try_openai_page_translate(
         self,
-        items: List[tuple[int, str]],
+        items: List[Tuple[int, str]],
         glossary: Dict[str, str],
     ) -> Optional[List[TranslationItem]]:
         """Attempt context-aware page translation via OpenAI or OpenAI-compatible API (DeepSeek/OpenRouter)."""
@@ -271,23 +491,20 @@ class MangaTranslator:
             "https://api.openai.com/v1/chat/completions",
         ).strip()
         model_name = getattr(self.config, "openai_model", "gpt-4o-mini") or "gpt-4o-mini"
-
-        glossary_lines = "\n".join(f"- {k} -> {v}" for k, v in glossary.items())
-        dialogue_lines = "\n".join(f"[{bid}] {txt}" for bid, txt in items)
-
-        prompt = (
-            "Sen profesyonel bir manga çevirmenisin (İngilizce -> Türkçe).\n"
-            "Bu sayfadaki konuşma balonlarını bağlama uygun, doğal Türkçe manga diline çevir.\n"
-            "Sadece geçerli bir JSON nesnesi döndür: {\"1\": \"çeviri\", \"2\": \"çeviri\", ...}\n"
-            f"Sözlük:\n{glossary_lines}\n\n"
-            f"Metinler:\n{dialogue_lines}"
-        )
+        prompt = self._build_llm_context_prompt(items, glossary)
 
         body = json.dumps(
             {
                 "model": model_name,
                 "messages": [
-                    {"role": "system", "content": "You are a professional English-to-Turkish manga translator. Output valid JSON only."},
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a professional English-to-Turkish manga/manhwa translator. "
+                            "Analyze the full page context, keep proper nouns, series titles (e.g. One Piece), "
+                            "honorifics, and attack names untranslated, and output valid JSON only."
+                        ),
+                    },
                     {"role": "user", "content": prompt},
                 ],
                 "response_format": {"type": "json_object"},
@@ -329,20 +546,78 @@ class MangaTranslator:
         except Exception:
             return None
 
+    # ------------------------------------------------------------------
+    # Free Full-Page Context-Aware GTX + Term Protector Engine
+    # ------------------------------------------------------------------
+
+    def _lock_protected_terms(
+        self,
+        text: str,
+        glossary: Dict[str, str],
+    ) -> Tuple[str, Dict[str, str]]:
+        """
+        Replace protected series terms, character names, and glossary entries with
+        placeholder tokens (`XMT0X`, `XMT1X`) BEFORE machine translation so neural MT
+        never translates "One Piece" as "Tek Parça" or mangles character names.
+        """
+        token_map: Dict[str, str] = {}
+        locked = text
+
+        # Sort glossary keys by length descending so multi-word terms ("One Piece", "Grand Line") match first
+        sorted_terms = sorted(glossary.items(), key=lambda kv: len(kv[0]), reverse=True)
+        token_idx = 0
+
+        for en_term, tr_replacement in sorted_terms:
+            if not en_term or len(en_term) < 2:
+                continue
+            pattern = re.compile(rf"\b{re.escape(en_term)}\b", flags=re.IGNORECASE)
+            if pattern.search(locked):
+                placeholder = f"XMT{token_idx}X"
+                token_map[placeholder] = tr_replacement
+                locked = pattern.sub(placeholder, locked)
+                token_idx += 1
+
+        return locked, token_map
+
+    def _unlock_protected_terms(self, text: str, token_map: Dict[str, str]) -> str:
+        unlocked = text
+        for placeholder, replacement in token_map.items():
+            unlocked = re.sub(re.escape(placeholder), replacement, unlocked, flags=re.IGNORECASE)
+        return unlocked
+
     def _translate_with_gtx_and_refiner(
         self,
-        items: List[tuple[int, str]],
+        items: List[Tuple[int, str]],
         glossary: Dict[str, str],
     ) -> List[TranslationItem]:
         """
-        Translate page dialogue using free GTX endpoint with manga slang pre-processing
+        Translate page dialogue using full-page batch context + protected term locking
         and natural Turkish scanlation post-processing.
         """
-        results: List[TranslationItem] = []
-        for bid, src in items:
+        prepped_lines: List[str] = []
+        token_maps: List[Dict[str, str]] = []
+
+        for _, src in items:
             prepped = self._preprocess_english_for_mt(src, glossary)
-            raw_tr = self._call_gtx_single(prepped)
-            refined_tr = self._postprocess_turkish(src, raw_tr, glossary)
+            locked, tmap = self._lock_protected_terms(prepped, glossary)
+            prepped_lines.append(locked)
+            token_maps.append(tmap)
+
+        # Send all bubbles on the page together separated by newline so the neural translator
+        # attends to the entire page's dialogue context at once
+        batch_text = "\n".join(prepped_lines)
+        batch_translated = self._call_gtx_single(batch_text)
+        split_lines = [line.strip() for line in batch_translated.split("\n") if line.strip()]
+
+        if len(split_lines) != len(items):
+            # Fallback to per-line call if newline count changed
+            split_lines = [self._call_gtx_single(line) for line in prepped_lines]
+
+        results: List[TranslationItem] = []
+        for idx, (bid, src) in enumerate(items):
+            raw_tr = split_lines[idx] if idx < len(split_lines) else ""
+            unlocked_tr = self._unlock_protected_terms(raw_tr, token_maps[idx])
+            refined_tr = self._postprocess_turkish(src, unlocked_tr, glossary)
             results.append(
                 TranslationItem(
                     block_id=bid,
@@ -361,7 +636,6 @@ class MangaTranslator:
         # Convert ALL-CAPS manga text to sentence case so neural MT doesn't treat words as acronyms
         if s.isupper() and len(s) > 2:
             s = s.capitalize()
-            # Keep "I" and "I'..." capitalized
             s = re.sub(r"\bi(?=['\s]|$)", "I", s)
 
         return s
@@ -448,4 +722,4 @@ class MangaTranslator:
         elif source_en.strip().endswith("...") and not tr.endswith("..."):
             tr = tr.rstrip(".") + "..."
 
-        return tr.strip()
+        return tr
