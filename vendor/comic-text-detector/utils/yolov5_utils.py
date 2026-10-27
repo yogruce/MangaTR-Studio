@@ -1,7 +1,11 @@
 import math
 import torch
 import torch.nn as nn
-import pkg_resources as pkg
+try:
+    from packaging.version import parse as _parse_version
+except ImportError:
+    def _parse_version(v: str):
+        return tuple(int(p) if p.isdigit() else 0 for p in str(v).split(".")[:3])
 import torch.nn.functional as F
 import cv2
 import numpy as np
@@ -73,7 +77,7 @@ def intersect_dicts(da, db, exclude=()):
 
 def check_version(current='0.0.0', minimum='0.0.0', name='version ', pinned=False, hard=False):
     # Check version vs. required version
-    current, minimum = (pkg.parse_version(x) for x in (current, minimum))
+    current, minimum = (_parse_version(x) for x in (current, minimum))
     result = (current == minimum) if pinned else (current >= minimum)  # bool
     if hard:  # assert min requirements met
         assert result, f'{name}{minimum} required by YOLOv5, but {name}{current} is currently installed'
