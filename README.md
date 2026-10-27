@@ -1,10 +1,26 @@
 # 🎌 MangaTR-Studio — Yapay Zeka Destekli Türkçe Manga Çeviri, Balon Temizleme & Dizgi Stüdyosu
 
-**MangaTR-Studio**, İngilizce manga sayfalarını uçtan uca (veya kullanıcı kontrollü masaüstü arayüzüyle) **tespit eden, satır bazlı OCR ile okuyan, bağlama uygun doğal Türkçeye çeviren, konuşma balonlarını çizgilere zarar vermeden temizleyen (inpaint) ve Türkçe karakter destekli (`Ç, Ğ, İ, Ö, Ş, Ü`) profesyonel manga dizgisi (typesetting) yapan** açık kaynaklı bir masaüstü uygulamasıdır.
+**MangaTR-Studio**, her türlü İngilizce **manga, manhwa, webtoon ve çizgi roman** sayfasını uçtan uca (veya kullanıcı kontrollü masaüstü arayüzüyle) **tespit eden, satır bazlı OCR ile okuyan, bağlama uygun doğal Türkçeye çeviren, konuşma balonlarını çizgilere zarar vermeden temizleyen (inpaint) ve Türkçe karakter destekli (`Ç, Ğ, İ, Ö, Ş, Ü`) profesyonel manga dizgisi (typesetting) yapan** açık kaynaklı bir masaüstü uygulamasıdır.
 
 > 💡 **API Anahtarı Gerekir mi?**
 > **Hayır!** MangaTR-Studio kutudan çıktığı haliyle **hiçbir ücretli API anahtarına ihtiyaç duymadan (`free_web` / `auto` moduyla) %100 ücretsiz** çalışır.
 > İsteğe bağlı olarak kendi **Google Gemini API**, **OpenAI / DeepSeek / OpenRouter API** anahtarınızı veya tamamen çevrimdışı çalışan **Yerel LLM (Ollama)** modelinizi bağlayabilirsiniz.
+
+---
+
+## 🖼️ Örnek Çıktı (Orijinal İngilizce vs. Türkçe Çeviri & Dizgi)
+
+Depo içerisindeki [`input/test.jpg`](input/test.jpg) örnek sayfası ve [`output/`](output/) klasöründeki otomatik üretilmiş çıktılar:
+
+| 1. Orijinal İngilizce (`input/test.jpg`) | 2. Tespit & Okuma Sırası (`output/test_detected.jpg`) |
+| :---: | :---: |
+| <img src="input/test.jpg" width="420" alt="Orijinal İngilizce Sayfa"/> | <img src="output/test_detected.jpg" width="420" alt="Tespit Kutuları"/> |
+
+| 3. Temizlenmiş / Inpaint (`output/test_cleaned.jpg`) | 4. Final Türkçe Dizgi (`output/test_tr.jpg`) |
+| :---: | :---: |
+| <img src="output/test_cleaned.jpg" width="420" alt="Temizlenmiş Balonlar"/> | <img src="output/test_tr.jpg" width="420" alt="Final Türkçe Sayfa"/> |
+
+> 📄 Tüm balonların tespit koordinatları, satır poligonları, okunan İngilizce OCR metinleri ve Türkçe çevirileri için: **[`output/test_tr.json`](output/test_tr.json)**
 
 ---
 
@@ -25,7 +41,7 @@
    - **Yerel LLM (`local_llm` - Ollama)**: `qwen2.5:7b` vb. yerel modellerle %100 çevrimdışı, sayfa bağlamını koruyan çeviri yapar.
    - **Google Gemini API (`gemini_api` - Opsiyonel)**: `GEMINI_API_KEY` girildiğinde tüm sayfa diyaloglarını tek seferde bağlama duyarlı çevirir.
    - **OpenAI / DeepSeek / OpenRouter API (`openai_api` - Opsiyonel)**: OpenAI uyumlu herhangi bir LLM API'si ile çalışır.
-   - **Proje Terimler Sözlüğü (`glossary.json`)**: 1'den 400+ bölüme kadar özel isimlerin (*Whale Island -> Balina Adası*, *Hunter -> Avcı*) tüm bölümlerde tutarlı çevrilmesini sağlar.
+   - **Proje Terimler Sözlüğü (`glossary.json`)**: Çevirdiğiniz herhangi bir manga, manhwa veya webtoon serisine özel karakter/yer/yetenek isimlerini ekleyip düzenleyebileceğiniz sözlük sistemi sayesinde 1'den 400+ bölüme kadar tüm bölümlerde terimlerin tutarlı çevrilmesini sağlar.
 
 4. **🧹 Akıllı Balon Temizleme & Hibrit Inpainting (`app/engines/cleaner.py`)**
    - **Beyaz/Düz Konuşma Balonları**: Balonun dış siyah kontur çizgilerini koruyarak iç metin bölgesini pürüzsüz balon arka plan rengiyle temizler.

@@ -1,0 +1,1634 @@
+﻿{
+  "source_image": "input/test.jpg",
+  "output_image": "output/test_tr.jpg",
+  "image_width": 1066,
+  "image_height": 1600,
+  "device": "cuda",
+  "reading_order": "manga_rtl",
+  "block_count": 16,
+  "blocks": [
+    {
+      "id": 1,
+      "bbox": [
+        898,
+        148,
+        962,
+        214
+      ],
+      "safe_box": [
+        898,
+        143,
+        964,
+        218
+      ],
+      "language": "eng",
+      "vertical": false,
+      "text": "HEY, KID...",
+      "translation": "Hey, evlat...",
+      "translation_backend": "free_manga_localizer",
+      "confidence": 0.5033,
+      "ocr_confidence": 0.5033,
+      "mask_confidence": 0.995,
+      "font_size": 18.5,
+      "render_font_size": 0,
+      "font_name": "",
+      "clean_mode": "smart_bubble_fill",
+      "recovered_from_mask": false,
+      "merged_duplicates": 0,
+      "lines": [
+        {
+          "line_index": 1,
+          "bbox": [
+            907,
+            155,
+            957,
+            185
+          ],
+          "text": "HEY,",
+          "confidence": 0.792
+        },
+        {
+          "line_index": 2,
+          "bbox": [
+            905,
+            178,
+            964,
+            205
+          ],
+          "text": "KID...",
+          "confidence": 0.1972
+        }
+      ],
+      "line_bboxes": [
+        [
+          904,
+          161,
+          961,
+          181
+        ],
+        [
+          902,
+          184,
+          962,
+          201
+        ]
+      ],
+      "rendered_font_size": 13,
+      "rendered_font_name": "ComicSansMS-Bold.ttf",
+      "rendered_lines": [
+        "HEY,",
+        "EVLAT..."
+      ]
+    },
+    {
+      "id": 2,
+      "bbox": [
+        658,
+        126,
+        766,
+        242
+      ],
+      "safe_box": [
+        646,
+        114,
+        778,
+        254
+      ],
+      "language": "eng",
+      "vertical": false,
+      "text": "...YOU EMBARKED AT WHALE ISLAND, RIGHT?",
+      "translation": "...Balina Adası'ndan yola çıktın, değil mi?",
+      "translation_backend": "free_manga_localizer",
+      "confidence": 0.7447,
+      "ocr_confidence": 0.7447,
+      "mask_confidence": 0.995,
+      "font_size": 18.0,
+      "render_font_size": 0,
+      "font_name": "",
+      "clean_mode": "smart_bubble_fill",
+      "recovered_from_mask": false,
+      "merged_duplicates": 1,
+      "lines": [
+        {
+          "line_index": 1,
+          "bbox": [
+            682,
+            127,
+            748,
+            156
+          ],
+          "text": "AYOU",
+          "confidence": 0.1133
+        },
+        {
+          "line_index": 2,
+          "bbox": [
+            654,
+            150,
+            770,
+            179
+          ],
+          "text": "EMBARKED",
+          "confidence": 0.9427
+        },
+        {
+          "line_index": 3,
+          "bbox": [
+            659,
+            172,
+            766,
+            201
+          ],
+          "text": "AT WHALE",
+          "confidence": 0.8099
+        },
+        {
+          "line_index": 4,
+          "bbox": [
+            667,
+            194,
+            756,
+            225
+          ],
+          "text": "ISLAND,",
+          "confidence": 0.8194
+        },
+        {
+          "line_index": 5,
+          "bbox": [
+            676,
+            218,
+            757,
+            247
+          ],
+          "text": "RIGHT?",
+          "confidence": 0.3796
+        }
+      ],
+      "line_bboxes": [
+        [
+          674,
+          133,
+          751,
+          151
+        ],
+        [
+          658,
+          156,
+          766,
+          174
+        ],
+        [
+          658,
+          178,
+          766,
+          197
+        ],
+        [
+          666,
+          202,
+          759,
+          221
+        ],
+        [
+          674,
+          224,
+          761,
+          241
+        ]
+      ],
+      "rendered_font_size": 17,
+      "rendered_font_name": "ComicSansMS-Bold.ttf",
+      "rendered_lines": [
+        "...BALİNA",
+        "ADASI'NDAN",
+        "YOLA",
+        "ÇIKTIN,",
+        "DEĞİL Mİ?"
+      ]
+    },
+    {
+      "id": 3,
+      "bbox": [
+        490,
+        156,
+        593,
+        227
+      ],
+      "safe_box": [
+        489,
+        151,
+        594,
+        232
+      ],
+      "language": "eng",
+      "vertical": false,
+      "text": "WHAT'S YER DAD'S TRADE?",
+      "translation": "Babanın mesleği ne?",
+      "translation_backend": "free_manga_localizer",
+      "confidence": 0.9559,
+      "ocr_confidence": 0.9559,
+      "mask_confidence": 0.995,
+      "font_size": 22.0,
+      "render_font_size": 0,
+      "font_name": "",
+      "clean_mode": "smart_bubble_fill",
+      "recovered_from_mask": false,
+      "merged_duplicates": 0,
+      "lines": [
+        {
+          "line_index": 1,
+          "bbox": [
+            500,
+            157,
+            584,
+            187
+          ],
+          "text": "WHAT'S",
+          "confidence": 0.9766
+        },
+        {
+          "line_index": 2,
+          "bbox": [
+            485,
+            178,
+            598,
+            209
+          ],
+          "text": "YER DAD'S",
+          "confidence": 0.8978
+        },
+        {
+          "line_index": 3,
+          "bbox": [
+            499,
+            202,
+            584,
+            231
+          ],
+          "text": "TRADE?",
+          "confidence": 0.9932
+        }
+      ],
+      "line_bboxes": [
+        [
+          506,
+          159,
+          576,
+          182
+        ],
+        [
+          492,
+          182,
+          589,
+          204
+        ],
+        [
+          506,
+          207,
+          576,
+          225
+        ]
+      ],
+      "rendered_font_size": 19,
+      "rendered_font_name": "ComicSansMS-Bold.ttf",
+      "rendered_lines": [
+        "BABANIN",
+        "MESLEĞİ",
+        "NE?"
+      ]
+    },
+    {
+      "id": 4,
+      "bbox": [
+        318,
+        148,
+        389,
+        220
+      ],
+      "safe_box": [
+        318,
+        142,
+        393,
+        220
+      ],
+      "language": "eng",
+      "vertical": false,
+      "text": "HE'S A HUNTER!!",
+      "translation": "O bir Avcı!!",
+      "translation_backend": "free_manga_localizer",
+      "confidence": 0.4391,
+      "ocr_confidence": 0.4391,
+      "mask_confidence": 0.995,
+      "font_size": 29.0,
+      "render_font_size": 0,
+      "font_name": "",
+      "clean_mode": "smart_bubble_fill",
+      "recovered_from_mask": false,
+      "merged_duplicates": 1,
+      "lines": [
+        {
+          "line_index": 1,
+          "bbox": [
+            316,
+            149,
+            391,
+            178
+          ],
+          "text": "HE'S A",
+          "confidence": 0.6254
+        },
+        {
+          "line_index": 2,
+          "bbox": [
+            323,
+            172,
+            393,
+            201
+          ],
+          "text": "HLNT -",
+          "confidence": 0.3317
+        },
+        {
+          "line_index": 3,
+          "bbox": [
+            332,
+            194,
+            383,
+            223
+          ],
+          "text": "ER!!",
+          "confidence": 0.3603
+        }
+      ],
+      "line_bboxes": [
+        [
+          318,
+          148,
+          389,
+          178
+        ],
+        [
+          323,
+          171,
+          389,
+          200
+        ],
+        [
+          332,
+          195,
+          381,
+          220
+        ]
+      ],
+      "rendered_font_size": 22,
+      "rendered_font_name": "ComicSansMS-Bold.ttf",
+      "rendered_lines": [
+        "O BİR",
+        "AVCI!!"
+      ]
+    },
+    {
+      "id": 5,
+      "bbox": [
+        120,
+        117,
+        238,
+        254
+      ],
+      "safe_box": [
+        117,
+        117,
+        241,
+        258
+      ],
+      "language": "eng",
+      "vertical": false,
+      "text": "I'VE NEVER MET HIM BUT I HEAR HE'S THE BEST!!",
+      "translation": "Onunla hiç tanışmadım ama en iyisi olduğunu duydum!!",
+      "translation_backend": "free_manga_localizer",
+      "confidence": 0.5095,
+      "ocr_confidence": 0.5095,
+      "mask_confidence": 0.995,
+      "font_size": 26.0,
+      "render_font_size": 0,
+      "font_name": "",
+      "clean_mode": "smart_bubble_fill",
+      "recovered_from_mask": false,
+      "merged_duplicates": 0,
+      "lines": [
+        {
+          "line_index": 1,
+          "bbox": [
+            151,
+            117,
+            202,
+            144
+          ],
+          "text": "I'VE",
+          "confidence": 0.4716
+        },
+        {
+          "line_index": 2,
+          "bbox": [
+            143,
+            138,
+            217,
+            168
+          ],
+          "text": "NEVER",
+          "confidence": 0.4212
+        },
+        {
+          "line_index": 3,
+          "bbox": [
+            133,
+            161,
+            226,
+            191
+          ],
+          "text": "MET HIM",
+          "confidence": 0.5808
+        },
+        {
+          "line_index": 4,
+          "bbox": [
+            115,
+            182,
+            244,
+            213
+          ],
+          "text": "BUT I HEAR",
+          "confidence": 0.7479
+        },
+        {
+          "line_index": 5,
+          "bbox": [
+            129,
+            206,
+            229,
+            236
+          ],
+          "text": "HE'S THE",
+          "confidence": 0.3423
+        },
+        {
+          "line_index": 6,
+          "bbox": [
+            141,
+            228,
+            216,
+            258
+          ],
+          "text": "BEST!!!",
+          "confidence": 0.4931
+        }
+      ],
+      "line_bboxes": [
+        [
+          151,
+          116,
+          198,
+          144
+        ],
+        [
+          145,
+          138,
+          211,
+          166
+        ],
+        [
+          135,
+          165,
+          217,
+          186
+        ],
+        [
+          123,
+          187,
+          234,
+          208
+        ],
+        [
+          134,
+          207,
+          220,
+          233
+        ],
+        [
+          145,
+          230,
+          209,
+          256
+        ]
+      ],
+      "rendered_font_size": 15,
+      "rendered_font_name": "ComicSansMS-Bold.ttf",
+      "rendered_lines": [
+        "ONUNLA HİÇ",
+        "TANIŞMADIM",
+        "AMA EN İYİSİ",
+        "OLDUĞUNU",
+        "DUYDUM!!"
+      ]
+    },
+    {
+      "id": 6,
+      "bbox": [
+        646,
+        454,
+        703,
+        479
+      ],
+      "safe_box": [
+        642,
+        454,
+        707,
+        479
+      ],
+      "language": "eng",
+      "vertical": false,
+      "text": "YEAH.",
+      "translation": "Evet.",
+      "translation_backend": "free_manga_localizer",
+      "confidence": 0.7594,
+      "ocr_confidence": 0.7594,
+      "mask_confidence": 0.995,
+      "font_size": 23.0,
+      "render_font_size": 0,
+      "font_name": "",
+      "clean_mode": "smart_bubble_fill",
+      "recovered_from_mask": false,
+      "merged_duplicates": 0,
+      "lines": [
+        {
+          "line_index": 1,
+          "bbox": [
+            642,
+            453,
+            708,
+            482
+          ],
+          "text": "YEAH.",
+          "confidence": 0.7594
+        }
+      ],
+      "line_bboxes": [
+        [
+          647,
+          456,
+          701,
+          479
+        ]
+      ],
+      "rendered_font_size": 18,
+      "rendered_font_name": "ComicSansMS-Bold.ttf",
+      "rendered_lines": [
+        "EVET."
+      ]
+    },
+    {
+      "id": 7,
+      "bbox": [
+        534,
+        518,
+        590,
+        562
+      ],
+      "safe_box": [
+        532,
+        516,
+        593,
+        564
+      ],
+      "language": "eng",
+      "vertical": false,
+      "text": "I SEE...",
+      "translation": "Anlıyorum...",
+      "translation_backend": "free_manga_localizer",
+      "confidence": 0.6786,
+      "ocr_confidence": 0.6786,
+      "mask_confidence": 0.995,
+      "font_size": 17.5,
+      "render_font_size": 0,
+      "font_name": "",
+      "clean_mode": "smart_bubble_fill",
+      "recovered_from_mask": false,
+      "merged_duplicates": 0,
+      "lines": [
+        {
+          "line_index": 1,
+          "bbox": [
+            551,
+            517,
+            570,
+            542
+          ],
+          "text": "I",
+          "confidence": 0.9672
+        },
+        {
+          "line_index": 2,
+          "bbox": [
+            530,
+            539,
+            597,
+            567
+          ],
+          "text": "SEE...",
+          "confidence": 0.39
+        }
+      ],
+      "line_bboxes": [
+        [
+          548,
+          522,
+          575,
+          539
+        ],
+        [
+          534,
+          544,
+          590,
+          562
+        ]
+      ],
+      "rendered_font_size": 10,
+      "rendered_font_name": "ComicSansMS-Bold.ttf",
+      "rendered_lines": [
+        "ANLIYORUM..."
+      ]
+    },
+    {
+      "id": 8,
+      "bbox": [
+        300,
+        517,
+        388,
+        609
+      ],
+      "safe_box": [
+        299,
+        509,
+        389,
+        617
+      ],
+      "language": "eng",
+      "vertical": false,
+      "text": "THE DAY HAS FINALLY COME...",
+      "translation": "O gün nihayet geldi...",
+      "translation_backend": "free_manga_localizer",
+      "confidence": 0.4513,
+      "ocr_confidence": 0.4513,
+      "mask_confidence": 0.995,
+      "font_size": 22.0,
+      "render_font_size": 0,
+      "font_name": "",
+      "clean_mode": "smart_bubble_fill",
+      "recovered_from_mask": false,
+      "merged_duplicates": 1,
+      "lines": [
+        {
+          "line_index": 1,
+          "bbox": [
+            321,
+            518,
+            369,
+            545
+          ],
+          "text": "THE",
+          "confidence": 0.2408
+        },
+        {
+          "line_index": 2,
+          "bbox": [
+            297,
+            539,
+            392,
+            568
+          ],
+          "text": "DAY HAS",
+          "confidence": 0.9864
+        },
+        {
+          "line_index": 3,
+          "bbox": [
+            300,
+            562,
+            390,
+            589
+          ],
+          "text": "FINALLY",
+          "confidence": 0.3449
+        },
+        {
+          "line_index": 4,
+          "bbox": [
+            303,
+            585,
+            389,
+            612
+          ],
+          "text": "COME...",
+          "confidence": 0.2332
+        }
+      ],
+      "line_bboxes": [
+        [
+          320,
+          518,
+          365,
+          543
+        ],
+        [
+          301,
+          542,
+          382,
+          564
+        ],
+        [
+          303,
+          567,
+          379,
+          584
+        ],
+        [
+          306,
+          587,
+          370,
+          609
+        ]
+      ],
+      "rendered_font_size": 17,
+      "rendered_font_name": "ComicSansMS-Bold.ttf",
+      "rendered_lines": [
+        "O GÜN",
+        "NİHAYET",
+        "GELDİ..."
+      ]
+    },
+    {
+      "id": 9,
+      "bbox": [
+        807,
+        747,
+        963,
+        885
+      ],
+      "safe_box": [
+        799,
+        733,
+        980,
+        899
+      ],
+      "language": "eng",
+      "vertical": false,
+      "text": "SO, CAN YOU TELL ME THE STORM'S SIZE AND WHEN WE'LL HIT IT?",
+      "translation": "Peki, fırtınanın büyüklüğünü ve ne zaman yakalanacağımızı söyleyebilir misin?",
+      "translation_backend": "free_manga_localizer",
+      "confidence": 0.5062,
+      "ocr_confidence": 0.5062,
+      "mask_confidence": 0.995,
+      "font_size": 25.0,
+      "render_font_size": 0,
+      "font_name": "",
+      "clean_mode": "smart_bubble_fill",
+      "recovered_from_mask": false,
+      "merged_duplicates": 0,
+      "lines": [
+        {
+          "line_index": 1,
+          "bbox": [
+            841,
+            747,
+            931,
+            777
+          ],
+          "text": "SO, CAN",
+          "confidence": 0.6852
+        },
+        {
+          "line_index": 2,
+          "bbox": [
+            816,
+            769,
+            954,
+            798
+          ],
+          "text": "YOU TELL ME",
+          "confidence": 0.2202
+        },
+        {
+          "line_index": 3,
+          "bbox": [
+            814,
+            791,
+            956,
+            821
+          ],
+          "text": "THE STORM'S",
+          "confidence": 0.2872
+        },
+        {
+          "line_index": 4,
+          "bbox": [
+            804,
+            815,
+            967,
+            845
+          ],
+          "text": "SIZE AND WHEN",
+          "confidence": 0.4875
+        },
+        {
+          "line_index": 5,
+          "bbox": [
+            834,
+            839,
+            939,
+            867
+          ],
+          "text": "WE'LL HIT",
+          "confidence": 0.4512
+        },
+        {
+          "line_index": 6,
+          "bbox": [
+            871,
+            861,
+            909,
+            889
+          ],
+          "text": "IT?",
+          "confidence": 0.7105
+        }
+      ],
+      "line_bboxes": [
+        [
+          845,
+          748,
+          925,
+          773
+        ],
+        [
+          822,
+          771,
+          945,
+          795
+        ],
+        [
+          819,
+          793,
+          945,
+          817
+        ],
+        [
+          811,
+          816,
+          958,
+          841
+        ],
+        [
+          837,
+          838,
+          931,
+          864
+        ],
+        [
+          870,
+          860,
+          906,
+          887
+        ]
+      ],
+      "rendered_font_size": 15,
+      "rendered_font_name": "ComicSansMS-Bold.ttf",
+      "rendered_lines": [
+        "PEKİ, FIRTINANIN",
+        "BÜYÜKLÜĞÜNÜ VE",
+        "NE ZAMAN",
+        "YAKALANACAĞIMIZI",
+        "SÖYLEYEBİLİR",
+        "MİSİN?"
+      ]
+    },
+    {
+      "id": 10,
+      "bbox": [
+        436,
+        707,
+        548,
+        845
+      ],
+      "safe_box": [
+        434,
+        700,
+        558,
+        848
+      ],
+      "language": "eng",
+      "vertical": false,
+      "text": "IT'S TWICE AS BIG AND VIOLENT AS THE LAST ONE.",
+      "translation": "Öncekinden iki kat daha büyük ve şiddetli.",
+      "translation_backend": "free_manga_localizer",
+      "confidence": 0.5505,
+      "ocr_confidence": 0.5505,
+      "mask_confidence": 0.995,
+      "font_size": 22.0,
+      "render_font_size": 0,
+      "font_name": "",
+      "clean_mode": "smart_bubble_fill",
+      "recovered_from_mask": false,
+      "merged_duplicates": 0,
+      "lines": [
+        {
+          "line_index": 1,
+          "bbox": [
+            468,
+            707,
+            518,
+            734
+          ],
+          "text": "IT'S",
+          "confidence": 0.3937
+        },
+        {
+          "line_index": 2,
+          "bbox": [
+            440,
+            728,
+            542,
+            758
+          ],
+          "text": "TWICE AS",
+          "confidence": 0.4748
+        },
+        {
+          "line_index": 3,
+          "bbox": [
+            448,
+            751,
+            537,
+            781
+          ],
+          "text": "BIG AND",
+          "confidence": 0.5479
+        },
+        {
+          "line_index": 4,
+          "bbox": [
+            430,
+            774,
+            553,
+            803
+          ],
+          "text": "VIOLENT AS",
+          "confidence": 0.8155
+        },
+        {
+          "line_index": 5,
+          "bbox": [
+            440,
+            796,
+            544,
+            826
+          ],
+          "text": "THE LAST",
+          "confidence": 0.5288
+        },
+        {
+          "line_index": 6,
+          "bbox": [
+            468,
+            821,
+            522,
+            848
+          ],
+          "text": "ONE.",
+          "confidence": 0.5425
+        }
+      ],
+      "line_bboxes": [
+        [
+          468,
+          707,
+          512,
+          731
+        ],
+        [
+          447,
+          731,
+          534,
+          753
+        ],
+        [
+          451,
+          754,
+          529,
+          776
+        ],
+        [
+          436,
+          779,
+          543,
+          796
+        ],
+        [
+          445,
+          800,
+          536,
+          821
+        ],
+        [
+          470,
+          820,
+          515,
+          845
+        ]
+      ],
+      "rendered_font_size": 16,
+      "rendered_font_name": "ComicSansMS-Bold.ttf",
+      "rendered_lines": [
+        "ÖNCEKİNDEN",
+        "İKİ KAT",
+        "DAHA BÜYÜK",
+        "VE",
+        "ŞİDDETLİ."
+      ]
+    },
+    {
+      "id": 11,
+      "bbox": [
+        167,
+        737,
+        300,
+        876
+      ],
+      "safe_box": [
+        151,
+        723,
+        316,
+        890
+      ],
+      "language": "eng",
+      "vertical": false,
+      "text": "AT OUR CURRENT SPEED, WE'LL BE IN IT IN SAY...THREE HOURS.",
+      "translation": "Mevcut hızımızla, diyelim ki... üç saat içinde fırtınaya gireriz.",
+      "translation_backend": "free_manga_localizer",
+      "confidence": 0.3661,
+      "ocr_confidence": 0.3661,
+      "mask_confidence": 0.995,
+      "font_size": 24.5,
+      "render_font_size": 0,
+      "font_name": "",
+      "clean_mode": "smart_bubble_fill",
+      "recovered_from_mask": false,
+      "merged_duplicates": 0,
+      "lines": [
+        {
+          "line_index": 1,
+          "bbox": [
+            193,
+            738,
+            277,
+            768
+          ],
+          "text": "AT OUR",
+          "confidence": 0.6591
+        },
+        {
+          "line_index": 2,
+          "bbox": [
+            184,
+            761,
+            285,
+            790
+          ],
+          "text": "CURRENT",
+          "confidence": 0.4443
+        },
+        {
+          "line_index": 3,
+          "bbox": [
+            164,
+            785,
+            305,
+            814
+          ],
+          "text": "SPEED, WE'LL",
+          "confidence": 0.1564
+        },
+        {
+          "line_index": 4,
+          "bbox": [
+            180,
+            806,
+            291,
+            835
+          ],
+          "text": "BE IN IT IN",
+          "confidence": 0.5447
+        },
+        {
+          "line_index": 5,
+          "bbox": [
+            170,
+            830,
+            301,
+            858
+          ],
+          "text": "SAY...THREE",
+          "confidence": 0.1269
+        },
+        {
+          "line_index": 6,
+          "bbox": [
+            196,
+            852,
+            281,
+            881
+          ],
+          "text": "HOURS.",
+          "confidence": 0.2654
+        }
+      ],
+      "line_bboxes": [
+        [
+          195,
+          735,
+          270,
+          766
+        ],
+        [
+          190,
+          762,
+          278,
+          787
+        ],
+        [
+          168,
+          785,
+          296,
+          809
+        ],
+        [
+          186,
+          808,
+          282,
+          830
+        ],
+        [
+          175,
+          832,
+          290,
+          853
+        ],
+        [
+          198,
+          852,
+          273,
+          878
+        ]
+      ],
+      "rendered_font_size": 20,
+      "rendered_font_name": "ComicSansMS-Bold.ttf",
+      "rendered_lines": [
+        "MEVCUT",
+        "HIZIMIZLA,",
+        "DİYELİM Kİ...",
+        "ÜÇ SAAT",
+        "İÇİNDE",
+        "FIRTINAYA",
+        "GİRERİZ."
+      ]
+    },
+    {
+      "id": 12,
+      "bbox": [
+        903,
+        1088,
+        975,
+        1128
+      ],
+      "safe_box": [
+        903,
+        1087,
+        975,
+        1128
+      ],
+      "language": "eng",
+      "vertical": false,
+      "text": "'BOUT RIGHT...",
+      "translation": "Aşağı yukarı öyle...",
+      "translation_backend": "free_manga_localizer",
+      "confidence": 0.5757,
+      "ocr_confidence": 0.5757,
+      "mask_confidence": 0.995,
+      "font_size": 17.5,
+      "render_font_size": 0,
+      "font_name": "",
+      "clean_mode": "complex_inpaint",
+      "recovered_from_mask": true,
+      "merged_duplicates": 0,
+      "lines": [
+        {
+          "line_index": 1,
+          "bbox": [
+            896,
+            1082,
+            980,
+            1110
+          ],
+          "text": "V 'BOUT",
+          "confidence": 0.7473
+        },
+        {
+          "line_index": 2,
+          "bbox": [
+            898,
+            1105,
+            985,
+            1133
+          ],
+          "text": "RIGHT...",
+          "confidence": 0.4042
+        }
+      ],
+      "line_bboxes": [
+        [
+          906,
+          1088,
+          975,
+          1105
+        ],
+        [
+          903,
+          1110,
+          975,
+          1128
+        ]
+      ],
+      "rendered_font_size": 14,
+      "rendered_font_name": "ComicSansMS-Bold.ttf",
+      "rendered_lines": [
+        "AŞAĞI",
+        "YUKARI",
+        "ÖYLE..."
+      ]
+    },
+    {
+      "id": 13,
+      "bbox": [
+        696,
+        1001,
+        853,
+        1115
+      ],
+      "safe_box": [
+        691,
+        993,
+        853,
+        1115
+      ],
+      "language": "eng",
+      "vertical": false,
+      "text": "...AND NOT SOME LANDLUBBER'S LUCKY GUESS, EITHER...",
+      "translation": "...Hem de acemi bir denizcinin şans tahmini falan değil...",
+      "translation_backend": "free_manga_localizer",
+      "confidence": 0.4026,
+      "ocr_confidence": 0.4026,
+      "mask_confidence": 0.995,
+      "font_size": 25.0,
+      "render_font_size": 0,
+      "font_name": "",
+      "clean_mode": "smart_bubble_fill",
+      "recovered_from_mask": false,
+      "merged_duplicates": 1,
+      "lines": [
+        {
+          "line_index": 1,
+          "bbox": [
+            740,
+            1000,
+            813,
+            1028
+          ],
+          "text": "AND",
+          "confidence": 0.5021
+        },
+        {
+          "line_index": 2,
+          "bbox": [
+            718,
+            1023,
+            834,
+            1051
+          ],
+          "text": "NOT SOME",
+          "confidence": 0.2193
+        },
+        {
+          "line_index": 3,
+          "bbox": [
+            692,
+            1038,
+            866,
+            1099
+          ],
+          "text": "LANDLUBBER'S LUCKY GUESS 2",
+          "confidence": 0.2952
+        },
+        {
+          "line_index": 4,
+          "bbox": [
+            726,
+            1091,
+            827,
+            1119
+          ],
+          "text": "EITHER...",
+          "confidence": 0.0402
+        }
+      ],
+      "line_bboxes": [
+        [
+          756,
+          1001,
+          806,
+          1027
+        ],
+        [
+          722,
+          1023,
+          823,
+          1048
+        ],
+        [
+          700,
+          1044,
+          847,
+          1069
+        ],
+        [
+          703,
+          1071,
+          839,
+          1091
+        ],
+        [
+          729,
+          1091,
+          804,
+          1117
+        ]
+      ],
+      "rendered_font_size": 17,
+      "rendered_font_name": "ComicSansMS-Bold.ttf",
+      "rendered_lines": [
+        "...HEM DE",
+        "ACEMİ BİR",
+        "DENİZCİNİN",
+        "ŞANS TAHMİNİ",
+        "FALAN DEĞİL..."
+      ]
+    },
+    {
+      "id": 14,
+      "bbox": [
+        555,
+        1014,
+        664,
+        1131
+      ],
+      "safe_box": [
+        555,
+        1002,
+        670,
+        1136
+      ],
+      "language": "eng",
+      "vertical": false,
+      "text": "C'MON, I'LL SHOW YOU HOW TO STEER A SHIP.",
+      "translation": "Hadi gel, sana gemi nasıl dümenlenir göstereyim.",
+      "translation_backend": "free_manga_localizer",
+      "confidence": 0.5647,
+      "ocr_confidence": 0.5647,
+      "mask_confidence": 0.995,
+      "font_size": 22.0,
+      "render_font_size": 0,
+      "font_name": "",
+      "clean_mode": "smart_bubble_fill",
+      "recovered_from_mask": false,
+      "merged_duplicates": 0,
+      "lines": [
+        {
+          "line_index": 1,
+          "bbox": [
+            542,
+            1000,
+            671,
+            1046
+          ],
+          "text": "C'MON, I'LL",
+          "confidence": 0.3991
+        },
+        {
+          "line_index": 2,
+          "bbox": [
+            552,
+            1037,
+            668,
+            1066
+          ],
+          "text": "SHOW YOU",
+          "confidence": 0.3867
+        },
+        {
+          "line_index": 3,
+          "bbox": [
+            565,
+            1058,
+            655,
+            1090
+          ],
+          "text": "HOW TO",
+          "confidence": 0.6164
+        },
+        {
+          "line_index": 4,
+          "bbox": [
+            562,
+            1081,
+            656,
+            1113
+          ],
+          "text": "STEER A",
+          "confidence": 0.3774
+        },
+        {
+          "line_index": 5,
+          "bbox": [
+            584,
+            1106,
+            643,
+            1134
+          ],
+          "text": "SHIP.",
+          "confidence": 0.9242
+        }
+      ],
+      "line_bboxes": [
+        [
+          556,
+          1017,
+          661,
+          1039
+        ],
+        [
+          559,
+          1040,
+          659,
+          1062
+        ],
+        [
+          567,
+          1060,
+          650,
+          1087
+        ],
+        [
+          568,
+          1085,
+          651,
+          1107
+        ],
+        [
+          586,
+          1107,
+          637,
+          1131
+        ]
+      ],
+      "rendered_font_size": 14,
+      "rendered_font_name": "ComicSansMS-Bold.ttf",
+      "rendered_lines": [
+        "HADİ GEL,",
+        "SANA GEMİ",
+        "NASIL",
+        "DÜMENLENİR",
+        "GÖSTEREYİM."
+      ]
+    },
+    {
+      "id": 15,
+      "bbox": [
+        414,
+        1054,
+        473,
+        1076
+      ],
+      "safe_box": [
+        410,
+        1054,
+        473,
+        1076
+      ],
+      "language": "eng",
+      "vertical": false,
+      "text": "WOW!!",
+      "translation": "Vay be!!",
+      "translation_backend": "free_manga_localizer",
+      "confidence": 0.2167,
+      "ocr_confidence": 0.2167,
+      "mask_confidence": 0.995,
+      "font_size": 22.0,
+      "render_font_size": 0,
+      "font_name": "",
+      "clean_mode": "complex_inpaint",
+      "recovered_from_mask": false,
+      "merged_duplicates": 0,
+      "lines": [
+        {
+          "line_index": 1,
+          "bbox": [
+            409,
+            1051,
+            484,
+            1081
+          ],
+          "text": "WOW!!",
+          "confidence": 0.2167
+        }
+      ],
+      "line_bboxes": [
+        [
+          414,
+          1054,
+          473,
+          1076
+        ]
+      ],
+      "rendered_font_size": 17,
+      "rendered_font_name": "ComicSansMS-Bold.ttf",
+      "rendered_lines": [
+        "VAY",
+        "BE!!"
+      ]
+    },
+    {
+      "id": 16,
+      "bbox": [
+        898,
+        1394,
+        949,
+        1420
+      ],
+      "safe_box": [
+        897,
+        1394,
+        949,
+        1420
+      ],
+      "language": "eng",
+      "vertical": false,
+      "text": "HEH!",
+      "translation": "Heh!",
+      "translation_backend": "free_manga_localizer",
+      "confidence": 0.396,
+      "ocr_confidence": 0.396,
+      "mask_confidence": 0.995,
+      "font_size": 24.0,
+      "render_font_size": 0,
+      "font_name": "",
+      "clean_mode": "smart_bubble_fill",
+      "recovered_from_mask": false,
+      "merged_duplicates": 0,
+      "lines": [
+        {
+          "line_index": 1,
+          "bbox": [
+            896,
+            1394,
+            953,
+            1424
+          ],
+          "text": "HEH!",
+          "confidence": 0.396
+        }
+      ],
+      "line_bboxes": [
+        [
+          900,
+          1396,
+          947,
+          1420
+        ]
+      ],
+      "rendered_font_size": 18,
+      "rendered_font_name": "ComicSansMS-Bold.ttf",
+      "rendered_lines": [
+        "HEH!"
+      ]
+    }
+  ]
+}

@@ -27,9 +27,13 @@ vendor/comic-text-detector/data/models/*
 # Proprietary Windows System Fonts (setup_project.py yerel sistemden kopyalar, GitHub'a sadece açık kaynak OFL fontlar yüklenir)
 fonts/ComicSansMS*.ttf
 
-# Generated Outputs & Temporary Files
+# Generated Outputs & Temporary Files (Örnek test çıktıları hariç)
 output/*
 !output/.gitkeep
+!output/test_tr.jpg
+!output/test_cleaned.jpg
+!output/test_detected.jpg
+!output/test_tr.json
 temp/*
 !temp/.gitkeep
 
