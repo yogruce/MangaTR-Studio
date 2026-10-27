@@ -20,7 +20,8 @@ __pycache__/
 *.part
 models/*
 !models/.gitkeep
-vendor/comic-text-detector/models/*
+vendor/comic-text-detector/models/*.pt
+vendor/comic-text-detector/models/*.onnx
 !vendor/comic-text-detector/models/.gitkeep
 vendor/comic-text-detector/data/models/*
 
