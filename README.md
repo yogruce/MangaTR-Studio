@@ -55,7 +55,7 @@
 Depoyu klonladıktan sonra **`setup.bat`** dosyasına çift tıklayın:
 
 ```bat
-git clone https://github.com/KULLANICI_ADINIZ/MangaTR-Studio.git
+git clone https://github.com/yogruce/MangaTR-Studio.git
 cd MangaTR-Studio
 setup.bat
 ```
