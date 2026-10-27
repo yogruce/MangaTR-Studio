@@ -1,31 +1,23 @@
 """
-MangaTR-Studio - End-to-End Localization Pipeline (app/core/pipeline.py)
-
-Orchestrates:
-1. Comic Text Detector + Duplicate Suppression + Undetected Mask Recovery
-2. Line-Level + Border-Cleaned EasyOCR
-3. Context-Aware Page Translation (with Series Glossary)
-4. 2-Tier Hybrid Text Cleaning & Background Inpainting
-5. Dynamic Turkish Manga Typesetting
+MangaTR-Studio - End-to-End & Interactive Page Processing Pipeline (app/core/pipeline.py)
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
-import torch
 
-from app.config import ROOT_DIR, StudioConfig
+from app.config import StudioConfig
 from app.core.project import ProjectManager
 from app.engines.cleaner import BlockCleanInfo, MangaCleaner
 from app.engines.detector import DetectedBlock, MangaTextDetector
 from app.engines.ocr_engine import MangaOCREngine, OCRBlockResult
 from app.engines.translator import MangaTranslator
-from app.engines.typesetter import MangaTypesetter, TypesetBlockSpec
+from app.engines.typesetter import MangaTypesetter
 from app.utils.json_utils import save_json
 
 
@@ -46,19 +38,26 @@ class PagePipelineResult:
 
 class MangaPipeline:
     """
-    Lazy-loaded, GPU-accelerated end-to-end Manga Localization Pipeline.
-    Keeps models warm in VRAM across multi-page / 400-chapter batch jobs.
+    Coordinates the 5 stages of MangaTR-Studio:
+    1. Detection & Duplicate Block Cleanup (+ Japanese SFX Rejection)
+    2. Multi-Candidate Smart OCR
+    3. Context-Aware & Vision-Assisted Page Translation
+    4. Hybrid Bubble Cleaning & Inpainting (only on valid English dialogue blocks!)
+    5. Turkish Typesetting & Instant Re-Typesetting
     """
 
     def __init__(
         self,
         config: Optional[StudioConfig] = None,
-        project_manager: Optional[ProjectManager] = None,
+        project: Optional[ProjectManager] = None,
+        device: Optional[str] = None,
     ) -> None:
+        import torch
+
         self.config = config or StudioConfig()
         self.config.ensure_dirs()
-        self.project = project_manager or ProjectManager("default")
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.project = project or ProjectManager("default")
 
         self._detector: Optional[MangaTextDetector] = None
         self._ocr: Optional[MangaOCREngine] = None
@@ -112,7 +111,6 @@ class MangaPipeline:
                 progress_callback(msg, pct)
 
         notify("Görsel okunuyor...", 0.05)
-        # Support Unicode paths on Windows
         img_bytes = np.fromfile(str(in_path), dtype=np.uint8)
         image = cv2.imdecode(img_bytes, cv2.IMREAD_COLOR)
         if image is None:
@@ -122,14 +120,28 @@ class MangaPipeline:
         notify("Metin bölgeleri ve satırlar tespit ediliyor (Comic Text Detector)...", 0.18)
         raw_mask, refined_mask, detected_blocks = self.detector.detect(image)
 
-        # 2. Line-Level + Border-Cleaned OCR
+        # 2. Multi-Candidate Smart OCR
         notify(f"EasyOCR ile {len(detected_blocks)} konuşma bloğu okunuyor...", 0.40)
         ocr_results = self.ocr.recognize_blocks(image, detected_blocks, mask_refined=refined_mask)
 
-        # 3. Context-Aware Page Translation
+        # Filter out blocks that are clearly non-English SFX before translation (unless Gemini Vision is enabled)
+        use_gemini_vision = (
+            self.config.translator.backend.lower() in ("auto", "gemini_api")
+            and bool(self.config.translator.gemini_api_key.strip())
+        )
+        if not use_gemini_vision:
+            filtered_pairs: List[Tuple[DetectedBlock, OCRBlockResult]] = [
+                (blk, ocr_res)
+                for blk, ocr_res in zip(detected_blocks, ocr_results)
+                if ocr_res.is_valid_english and ocr_res.text.strip()
+            ]
+            detected_blocks = [p[0] for p in filtered_pairs]
+            ocr_results = [p[1] for p in filtered_pairs]
+
+        # 3. Context-Aware & Vision-Assisted Page Translation
         notify("Diyaloglar bağlama uygun Türkçeye çevriliyor...", 0.62)
         trans_inputs = [
-            {"id": blk.id, "text": ocr_res.text}
+            {"id": blk.id, "text": ocr_res.text, "crop": ocr_res.crop_image}
             for blk, ocr_res in zip(detected_blocks, ocr_results)
         ]
         translations = self.translator.translate_page(
@@ -138,7 +150,38 @@ class MangaPipeline:
         )
         trans_map = {t.block_id: t for t in translations}
 
-        # 4. Hybrid Text Cleaning & Background Inpainting
+        # Filter out any block flagged as non-English SFX (is_sfx=True) or empty translation
+        # BEFORE cleaning/inpainting so Japanese SFX are never blurred or erased!
+        active_blocks: List[DetectedBlock] = []
+        active_ocr_results: List[OCRBlockResult] = []
+        for blk, ocr_res in zip(detected_blocks, ocr_results):
+            t_item = trans_map.get(blk.id)
+            if t_item is not None and t_item.is_sfx:
+                continue
+            if t_item is not None and t_item.source_text.strip():
+                ocr_res.text = t_item.source_text.strip()
+            if not ocr_res.text.strip() and (t_item is None or not t_item.translated_text.strip()):
+                continue
+            active_blocks.append(blk)
+            active_ocr_results.append(ocr_res)
+
+        detected_blocks = active_blocks
+        ocr_results = active_ocr_results
+
+        # Re-number active blocks sequentially (1..N)
+        old_to_new_id: Dict[int, int] = {}
+        for new_idx, (blk, ocr_res) in enumerate(zip(detected_blocks, ocr_results), start=1):
+            old_to_new_id[blk.id] = new_idx
+            blk.id = new_idx
+            ocr_res.block_id = new_idx
+
+        trans_map = {
+            old_to_new_id[old_id]: item
+            for old_id, item in trans_map.items()
+            if old_id in old_to_new_id
+        }
+
+        # 4. Hybrid Text Cleaning & Background Inpainting (only on valid active dialogue blocks!)
         notify("İngilizce metinler doğal arka plan korunarak temizleniyor...", 0.78)
         cleaned_bgr, clean_infos = self.cleaner.clean_page(image, refined_mask, detected_blocks)
         clean_map = {ci.block_id: ci for ci in clean_infos}
@@ -198,7 +241,6 @@ class MangaPipeline:
                 rec["rendered_font_name"] = sp.font_name
                 rec["rendered_lines"] = sp.lines
 
-        # Build detection debug visualization
         vis_bgr = self._draw_detection_visualization(image, block_records)
 
         # 6. Save outputs if output_dir provided
@@ -208,9 +250,9 @@ class MangaPipeline:
             out_dir = Path(output_dir)
             out_dir.mkdir(parents=True, exist_ok=True)
             stem = in_path.stem
-
             out_img_path = out_dir / f"{stem}_tr.jpg"
             out_json_path = out_dir / f"{stem}_tr.json"
+
             self._imwrite_unicode(out_img_path, final_tr_bgr, quality=self.config.jpeg_quality)
 
             if save_debug_artifacts:
@@ -218,8 +260,8 @@ class MangaPipeline:
                 self._imwrite_unicode(out_dir / f"{stem}_detected.jpg", vis_bgr, quality=self.config.jpeg_quality)
 
             payload = {
-                "source_image": str(in_path),
-                "output_image": str(out_img_path),
+                "source_image": in_path.name,
+                "output_image": out_img_path.name,
                 "image_width": int(image.shape[1]),
                 "image_height": int(image.shape[0]),
                 "device": self.device,
@@ -244,9 +286,9 @@ class MangaPipeline:
             output_json_path=out_json_path,
         )
 
-    def rerender_typesetting(self, page_result: PagePipelineResult) -> np.ndarray:
+    def retypeset_from_edits(self, page_result: PagePipelineResult) -> np.ndarray:
         """
-        Re-render Turkish text onto `page_result.cleaned_bgr` instantly after user edits
+        Instantly re-render the Turkish page after the user edits block bboxes,
         translations or font sizes in the UI, without re-running detection or OCR.
         """
         final_tr_bgr, specs = self.typesetter.typeset_page(
@@ -274,8 +316,8 @@ class MangaPipeline:
             save_json(
                 page_result.output_json_path,
                 {
-                    "source_image": str(page_result.input_path),
-                    "output_image": str(page_result.output_image_path),
+                    "source_image": page_result.input_path.name,
+                    "output_image": page_result.output_image_path.name if page_result.output_image_path else "",
                     "image_width": int(page_result.original_bgr.shape[1]),
                     "image_height": int(page_result.original_bgr.shape[0]),
                     "device": self.device,
@@ -298,26 +340,24 @@ class MangaPipeline:
                 lx1, ly1, lx2, ly2 = lb
                 cv2.rectangle(vis, (lx1, ly1), (lx2, ly2), (0, 165, 255), 1)
 
-            cv2.rectangle(vis, (x1, y1), (x2, y2), (0, 190, 0), 2)
-            conf = float(rec.get("ocr_confidence", 0.0))
-            label = f"#{idx:02d} ({conf:.2f})"
+            cv2.rectangle(vis, (x1, y1), (x2, y2), (0, 210, 0), 2)
+            label = f"#{idx:02d} ({rec.get('confidence', 0.0):.2f})"
             cv2.putText(
                 vis,
                 label,
-                (x1, max(20, y1 - 6)),
+                (x1, max(18, y1 - 6)),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                0.52,
-                (235, 60, 0),
+                0.50,
+                (255, 60, 0),
                 2,
                 cv2.LINE_AA,
             )
         return vis
 
     @staticmethod
-    def _imwrite_unicode(path: Path, image_bgr: np.ndarray, quality: int = 95) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
+    def _imwrite_unicode(path: Path, bgr_img: np.ndarray, quality: int = 95) -> None:
         ext = path.suffix.lower() or ".jpg"
         params = [int(cv2.IMWRITE_JPEG_QUALITY), int(quality)] if ext in (".jpg", ".jpeg") else []
-        ok, encoded = cv2.imencode(ext, image_bgr, params)
+        ok, encoded = cv2.imencode(ext, bgr_img, params)
         if ok:
             encoded.tofile(str(path))

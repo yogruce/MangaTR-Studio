@@ -78,9 +78,21 @@ class MangaTypesetter:
 
             bbox = [int(v) for v in b.get("bbox", [0, 0, 100, 100])]
             ci = clean_map.get(bid)
-            safe_box = ci.safe_text_box if ci else bbox
-            is_complex = (ci.mode == "complex_inpaint") if ci else bool(b.get("recovered_from_mask", False))
-            is_dark = ci.is_dark_bubble if ci else False
+            safe_box = ci.safe_text_box if ci else [int(v) for v in b.get("safe_box", bbox)]
+            sub_patch = cleaned_image_bgr[safe_box[1] : safe_box[3], safe_box[0] : safe_box[2]]
+            if ci is not None:
+                is_dark = ci.is_dark_bubble
+            else:
+                is_dark = bool(sub_patch.size > 0 and float(np.mean(sub_patch)) < 105.0)
+
+            # Enable stroke halo automatically if background under safe_box has speed-lines, borders, or texture
+            has_bg_texture = bool(
+                sub_patch.size > 0
+                and (float(np.std(sub_patch)) > 12.0 or (not is_dark and float(np.percentile(sub_patch, 5)) < 200.0))
+            )
+            is_complex = (
+                (ci.mode == "complex_inpaint") if ci else (b.get("clean_mode") == "complex_inpaint")
+            ) or has_bg_texture or is_dark
 
             display_text = tr_upper(raw_tr) if self.config.force_uppercase else raw_tr
             font_file = self._choose_font_file(display_text, str(b.get("font_name", "")))

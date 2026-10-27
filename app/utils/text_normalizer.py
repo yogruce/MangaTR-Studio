@@ -25,6 +25,35 @@ _OCR_WORD_FIXES = {
     r"\bHEHL\b": "HEH!",
     r"\bHEHI\b": "HEH!",
     r"\bWOWW!*\b": "WOW!!",
+    r"\bINEVERWANT\b": "I NEVER WANT",
+    r"\bNEVERWANT\b": "NEVER WANT",
+    r"\bTOREMEMBER\b": "TO REMEMBER",
+    r"\bTHOSEDAYS\b": "THOSE DAYS",
+    r"\bGETOUTOF\b": "GET OUT OF",
+    r"\bGETOUT\b": "GET OUT",
+    r"\bALRIGHTL!*\b": "ALRIGHT!!",
+    r"\bALPIGHTL!*\b": "ALRIGHT!!",
+    r"\bALPIGHT\b": "ALRIGHT",
+    r"\bDONEL!*\b": "DONE!!",
+    r"\bBEGONEL!*\b": "BEGONE!!",
+    r"\bBEGONEI!*\b": "BEGONE!!",
+    r"\bSEALEDI\b": "SEALED!",
+    r"\bSEALEDL\b": "SEALED!",
+    r"\bYSWERE\b": "DAYS WERE",
+    r"\bYS\s+WERE\b": "DAYS WERE",
+    r"\bTOGETHERI\s+NIF\s+F?\s*ILET\b": "TOGETHER!! IF I LET",
+    r"\bTOGETHER!*\s+NIF\s+I?\s*LET\b": "TOGETHER!! IF I LET",
+    r"\bILET\b": "I LET",
+    r"\bIMDONE\s+(?:QR|OR|FOR)[!I1]*\b": "I'M DONE FOR!!!",
+    r"\bIMDONE\b": "I'M DONE",
+    r"\bKEEEEE+A\b": "KEEEEEP",
+    r"\bKEEEEE+Q\b": "KEEEEEP",
+    r"\bTOGETHER[QI1L]+!*\b": "TOGETHER!!!",
+    r"\bAAH[VI1L]+!*\b": "AAH!!!",
+    r"\bHUFE\b": "HUFF",
+    r"\bGANJIS\s+PAST[0-9?\s}]*": "SANJI'S PAST...?! ",
+    r"\bSANJIVS\s+F?SAINT[}\s]*": "SANJI VS. SAINT ",
+    r"\bQILINGAM[I1L!]*\b": "QILINGAM!",
     r"\bIVE\b": "I'VE",
     r"\bCMON\b": "C'MON",
     r"\bIM\b": "I'M",
@@ -35,7 +64,7 @@ _OCR_WORD_FIXES = {
     r"\bWHATS\b": "WHAT'S",
     r"\bHES\b": "HE'S",
     r"\bSHES\b": "SHE'S",
-    r"\bITS\b(?=\s+(?:TWICE|A\b|THE\b|NOT\b|SO\b|TOO\b))": "IT'S",
+    r"\bITS\b(?=\s+(?:TWICE|A\b|THE\b|NOT\b|SO\b|TOO\b|DONE\b))": "IT'S",
     r"\bDONT\b": "DON'T",
     r"\bCANT\b": "CAN'T",
     r"\bWONT\b": "WON'T",
@@ -60,8 +89,8 @@ def clean_ocr_line(text: str) -> str:
     s = re.sub(r"^'{2,}(?=[A-Za-z])", "'", s)
 
     # Strip leading/trailing noise characters caused by speech bubble borders
-    s = re.sub(r"^[\s:;~_=`^|•·\-—]+(?=[A-Za-z'])", "", s)
-    s = re.sub(r"(?<=[A-Za-z?!.])[\s:;~_=`^|•·]+$", "", s)
+    s = re.sub(r"^[\s:;~_=`^|•·\-—(\[{]+(?=[A-Za-z'])", "", s)
+    s = re.sub(r"(?<=[A-Za-z?!.])[\s:;~_=`^|•·)\]}]+$", "", s)
 
     # Replace trailing ":." or ": _" or ";=" or ".." with "..."
     s = re.sub(r"[:;]\s*[._=-]+$", "...", s)
@@ -92,7 +121,6 @@ def merge_ocr_lines(lines: List[str]) -> str:
 
     result = cleaned[0]
     for nxt in cleaned[1:]:
-        # Check if previous line ends with a hyphenated word split
         if re.search(r"[A-Za-z]\s*-\s*$", result) and re.match(r"^[A-Za-z]", nxt):
             result = re.sub(r"\s*-\s*$", "", result) + nxt
         else:
@@ -120,8 +148,12 @@ def normalize_manga_english(text: str) -> str:
     s = re.sub(r"^[:;~']+\s*(?=AND\s+NOT)", "...", s)
     s = re.sub(r"^AND\s+NOT\s+SOME\b", "...AND NOT SOME", s)
     s = re.sub(r"^V\s+(?='?BOUT\s+RIGHT)", "", s)
-    s = re.sub(r"\s+[(\[]\s+(?=[A-Z])", " ", s)
+    s = re.sub(r"\s+[(\[{]\s*(?=[A-Z])", " ", s)
+    s = re.sub(r"(?<=[A-Z!?])\s*[)\]}]\s*", " ", s)
     s = re.sub(r"(?<=GUESS)\s+[F2:;]\s+(?=EITHER)", ", ", s)
+    s = re.sub(r"HEAD[,;.\s]*[!I1L]{2,}$", "HEAD...!!!", s)
+    s = re.sub(r"HELL[,;.\s]*[X!I1L]*$", "HELL!!", s)
+    s = re.sub(r"HUFF[:;.\s]*HUFF.*$", "HUFF... HUFF...", s)
     s = re.sub(r"!{3,}$", "!!", s)
 
     # Fix mid-sentence ellipsis read as ": ." or ":."

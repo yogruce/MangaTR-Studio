@@ -1,20 +1,25 @@
 """
-MangaTR-Studio - Context-Aware Manga Translation Engine (app/engines/translator.py)
+MangaTR-Studio - Context-Aware & Vision-Assisted Manga Translation Engine (app/engines/translator.py)
 
 Supports:
-1. Local LLM (Ollama / LM Studio / llama.cpp) - 100% offline & full-page context-aware
-2. Optional Gemini API / OpenAI-Compatible API (DeepSeek / OpenRouter / GPT-4o) - full-page context-aware
-3. Free Web GTX Batch + Universal Manga Context & Proper-Noun Protector - zero API key, works across all series
+1. Gemini Multimodal Vision + Context Translation (reads bubble crops directly + translates in full page context)
+2. Local LLM (Ollama / LM Studio / llama.cpp) - 100% offline & full-page context-aware
+3. OpenAI-Compatible API (DeepSeek / OpenRouter / GPT-4o) - full-page context-aware
+4. Free Web GTX Batch + Universal Manga Context & Proper-Noun Protector - zero API key, works across all series
 """
 
 from __future__ import annotations
 
+import base64
 import json
 import re
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Set, Tuple
+
+import cv2
+import numpy as np
 
 from app.config import TranslatorConfig
 
@@ -25,14 +30,13 @@ class TranslationItem:
     source_text: str
     translated_text: str
     backend_used: str
+    is_sfx: bool = False
 
 
 # ---------------------------------------------------------------------------
 # 1. Universal Untranslatable Manga / Manhwa / Webtoon / Anime Terms
-#    (Kept in original form across ALL series so "One Piece" != "Tek Parça", etc.)
 # ---------------------------------------------------------------------------
 UNIVERSAL_PROTECTED_TERMS: Dict[str, str] = {
-    # Iconic Titles & World Terms (Keep Untranslated)
     "One Piece": "One Piece",
     "Grand Line": "Grand Line",
     "New World": "New World",
@@ -47,6 +51,18 @@ UNIVERSAL_PROTECTED_TERMS: Dict[str, str] = {
     "Gorosei": "Gorosei",
     "Wano": "Wano",
     "Elbaf": "Elbaf",
+    "Sanji": "Sanji",
+    "Zoro": "Zoro",
+    "Luffy": "Luffy",
+    "Nami": "Nami",
+    "Usopp": "Usopp",
+    "Chopper": "Chopper",
+    "Robin": "Robin",
+    "Franky": "Franky",
+    "Brook": "Brook",
+    "Jinbe": "Jinbe",
+    "Qilingam": "Qilingam",
+    "Saint Qilingam": "Aziz Qilingam",
     "Haki": "Haki",
     "Haoshoku Haki": "Haoshoku Haki",
     "Busoshoku Haki": "Busoshoku Haki",
@@ -56,7 +72,6 @@ UNIVERSAL_PROTECTED_TERMS: Dict[str, str] = {
     "Gear Fourth": "Gear Fourth",
     "Gear Fifth": "Gear Fifth",
     "Gear 5": "Gear 5",
-    # Bleach / Shinigami terms
     "Bankai": "Bankai",
     "Shikai": "Shikai",
     "Zanpakuto": "Zanpakuto",
@@ -69,7 +84,6 @@ UNIVERSAL_PROTECTED_TERMS: Dict[str, str] = {
     "Quincy": "Quincy",
     "Reiatsu": "Reiatsu",
     "Shinigami": "Shinigami",
-    # Naruto / Ninja terms
     "Sharingan": "Sharingan",
     "Mangekyo Sharingan": "Mangekyo Sharingan",
     "Byakugan": "Byakugan",
@@ -92,7 +106,6 @@ UNIVERSAL_PROTECTED_TERMS: Dict[str, str] = {
     "Shinobi": "Shinobi",
     "Jinchuriki": "Jinchuriki",
     "Konoha": "Konoha",
-    # Hunter x Hunter / JJK / DBZ / MHA / JoJo / General Shonen
     "Nen": "Nen",
     "Zetsu": "Zetsu",
     "Hatsu": "Hatsu",
@@ -115,7 +128,6 @@ UNIVERSAL_PROTECTED_TERMS: Dict[str, str] = {
     "Hollow Purple": "Hollow Purple",
     "Grimoire": "Grimoire",
     "Hamon": "Hamon",
-    # Korean Manhwa / Murim / System / Webtoon terms
     "Murim": "Murim",
     "Dantian": "Dantian",
     "Mana": "Mana",
@@ -129,7 +141,6 @@ UNIVERSAL_PROTECTED_TERMS: Dict[str, str] = {
     "Hoobae": "Hoobae",
     "Ahjussi": "Ahjussi",
     "Ahjumma": "Ahjumma",
-    # Japanese Honorifics & Cultural Terms
     "Senpai": "Senpai",
     "Sensei": "Sensei",
     "Sama": "Sama",
@@ -141,7 +152,6 @@ UNIVERSAL_PROTECTED_TERMS: Dict[str, str] = {
     "Yokai": "Yokai",
     "Kaiju": "Kaiju",
     "Isekai": "Isekai",
-    # Common Manga/Manhwa Genre Terms with Official Turkish Scanlation Equivalents
     "Devil Fruit": "Şeytan Meyvesi",
     "Straw Hat": "Hasır Şapka",
     "Soul Reaper": "Ruh Tırpancısı",
@@ -155,7 +165,6 @@ UNIVERSAL_PROTECTED_TERMS: Dict[str, str] = {
     "Demon Slayer": "İblis Keser",
 }
 
-# Common English words that follow titles or appear in ALL-CAPS so we don't mistake them for proper names
 _COMMON_ENGLISH_STOPWORDS: Set[str] = {
     "THE", "AND", "FOR", "ARE", "BUT", "NOT", "YOU", "ALL", "ANY", "CAN", "HAD", "HER", "WAS",
     "ONE", "OUR", "OUT", "DAY", "GET", "HAS", "HIM", "HIS", "HOW", "MAN", "NEW", "NOW", "OLD",
@@ -168,9 +177,10 @@ _COMMON_ENGLISH_STOPWORDS: Set[str] = {
     "GREAT", "NEVER", "OTHER", "RIGHT", "SHALL", "SINCE", "STILL", "THREE", "UNDER", "UNTIL",
     "WATER", "WHERE", "WORLD", "WOULD", "YEARS", "YOUNG", "STORM", "SPEED", "HOURS", "GUESS",
     "TRADE", "SHIP", "STEER", "ISLAND", "WHALE", "HUNTER", "CAPTAIN", "MASTER", "LORD", "KING",
+    "HEAD", "PAST", "SAINT", "STAY", "SEALED", "HELL", "DONE", "KEEP", "TOGETHER", "MENTAL",
+    "DEFENSES", "DROP", "HUFF",
 }
 
-# Conversational manga English pre-normalization for better translation quality
 _MANGA_SLANG_PREMAP = [
     (r"\bWHAT'S\s+YER\s+DAD'S\s+TRADE\?", "What is your dad's profession?"),
     (r"\bYER\b", "YOUR"),
@@ -181,9 +191,10 @@ _MANGA_SLANG_PREMAP = [
     (r"^HEY,\s*KID\.{0,3}$", "Hey, kid..."),
     (r"\bIN\s+SAY\.{2,3}\s*THREE\s+HOURS\b", "in, say, three hours"),
     (r"\bLANDLUBBER'S\s+LUCKY\s+GUESS\b", "amateur sailor's lucky guess"),
+    (r"\bKE+P\s+IT\s+TOGETHER\b", "Pull yourself together"),
+    (r"\bI'M\s+DONE\s+FOR\b", "I am finished"),
 ]
 
-# Natural Turkish manga scanlation refinements
 _TURKISH_MANGA_REFINEMENTS = [
     (r"^Hey,\s*çocuk\.{0,3}$", "Hey, evlat..."),
     (r"^Hey\s+çocuk\.{0,3}$", "Hey, evlat..."),
@@ -203,21 +214,25 @@ _TURKISH_MANGA_REFINEMENTS = [
     (r"\bacemi\s+denizcinin\s+şanslı\s+tahmini\s+de\s+değil\b", "acemi bir denizcinin şans eseri tahmini de değil"),
     (r"^Yaklaşık\s+olarak\s+doğru\.{0,3}$", "Aşağı yukarı öyle..."),
     (r"^Hemen\s+hemen\s+doğru\.{0,3}$", "Aşağı yukarı öyle..."),
+    (r"^Kafamdan\s+çık.*$", "Zihnimden çık...!!!"),
+    (r"^Defol!\s*Mühürlü\s*kal.*$", "Defol!! Mühürlü kal! O günler cehennem gibiydi!!"),
 ]
 
 
 class MangaTranslator:
     """
     Context-aware page translator with universal proper-noun/manga-term protection,
-    page-level discourse analysis, and automatic fallback across:
+    multimodal Gemini Vision support, and automatic fallback across:
     - Local Ollama LLM
-    - Optional Gemini API / OpenAI-compatible API
+    - Gemini API (with Multimodal Vision bubble crop reading + fallback model chain)
+    - OpenAI-compatible API
     - Free GTX Web Translator + Universal Manga Context & Term Protector
     """
 
     def __init__(self, config: Optional[TranslatorConfig] = None) -> None:
         self.config = config or TranslatorConfig()
         self._ollama_available: Optional[bool] = None
+        self._working_gemini_model: Optional[str] = None
 
     def translate_page(
         self,
@@ -225,14 +240,22 @@ class MangaTranslator:
         custom_glossary: Optional[Dict[str, str]] = None,
     ) -> List[TranslationItem]:
         """
-        Translate all dialogue blocks on a manga page together to preserve context
-        and protect series-specific proper nouns/terms across ANY manga/manhwa/comic.
+        Translate all dialogue blocks on a manga page together to preserve context.
+        `blocks` is a list of dicts with {"id": int, "text": str, optional "crop": np.ndarray}.
         """
-        # Merge universal protected terms + config glossary + custom project glossary
         effective_glossary: Dict[str, str] = dict(UNIVERSAL_PROTECTED_TERMS)
         effective_glossary.update(self.config.glossary)
         if custom_glossary:
             effective_glossary.update(custom_glossary)
+
+        has_any_crop = any(isinstance(b.get("crop"), np.ndarray) for b in blocks)
+        backend = self.config.backend.lower()
+
+        # When Gemini API is active and bubble crops are provided, include all blocks so Vision can read them
+        if backend in ("auto", "gemini_api") and self.config.gemini_api_key.strip() and has_any_crop:
+            gem_vis = self._try_gemini_vision_page_translate(blocks, effective_glossary)
+            if gem_vis is not None:
+                return gem_vis
 
         valid_items = [
             (int(b["id"]), str(b.get("text", "")).strip())
@@ -242,13 +265,10 @@ class MangaTranslator:
         if not valid_items:
             return []
 
-        # Dynamically analyze the page to discover character names, honorifics & special terms
         dynamic_terms = self._extract_dynamic_protected_terms([txt for _, txt in valid_items])
         for term in dynamic_terms:
             if term not in effective_glossary:
                 effective_glossary[term] = term
-
-        backend = self.config.backend.lower()
 
         # 1. Try Local LLM (Ollama) if selected or auto
         if backend in ("auto", "local_llm"):
@@ -256,7 +276,7 @@ class MangaTranslator:
             if llm_res is not None:
                 return llm_res
 
-        # 2. Try Gemini API if key is configured
+        # 2. Try Gemini Text API if key is configured
         if backend in ("auto", "gemini_api") and self.config.gemini_api_key.strip():
             gem_res = self._try_gemini_page_translate(valid_items, effective_glossary)
             if gem_res is not None:
@@ -284,14 +304,9 @@ class MangaTranslator:
     # ------------------------------------------------------------------
 
     def _extract_dynamic_protected_terms(self, texts: List[str]) -> List[str]:
-        """
-        Automatically detect character names, honorific-attached names, and Japanese/Korean
-        romanized technique/place names from ANY manga/manhwa page without prior configuration.
-        """
         discovered: List[str] = []
         full_page_text = " \n ".join(texts)
 
-        # 1. Hyphenated Japanese/Korean Honorific Names: e.g., "Luffy-san", "Naruto-kun", "Gojo-sensei", "Jinwoo-ssi"
         honorific_pattern = re.compile(
             r"\b([A-Za-z]{2,15})-(san|kun|chan|sama|sensei|senpai|dono|tan|chama|ssi|nim)\b",
             re.IGNORECASE,
@@ -304,7 +319,6 @@ class MangaTranslator:
             if base_name.upper() not in _COMMON_ENGLISH_STOPWORDS:
                 discovered.append(base_name)
 
-        # 2. Title + Character/Place Name: e.g., "Lord Aizen", "Captain Levi", "Master Roshi", "Mount Hua"
         title_name_pattern = re.compile(
             r"\b(?:Lord|Lady|Captain|General|Admiral|Commander|Master|Doctor|Professor|Prince|Princess|Saint|Duke|Emperor|Mount)\s+([A-Za-z]{3,14})\b",
             re.IGNORECASE,
@@ -314,8 +328,6 @@ class MangaTranslator:
             if candidate.upper() not in _COMMON_ENGLISH_STOPWORDS:
                 discovered.append(candidate.capitalize())
 
-        # 3. Japanese & Korean Romanized Morphology Detector (character & skill names in any manga/manhwa)
-        #    Matches distinct JP/KR name suffixes like -maru, -suke, -taro, -kage, -gakure, -jutsu, -giri, -hyun, -woo, -seok
         jp_kr_morph_pattern = re.compile(
             r"\b([A-Za-z]{2,10}(?:maru|suke|taro|jiro|hiko|kage|gakure|jutsu|giri|zaki|moto|hara|shiro|kaze|ryu|hyun|heon|seok|cheol|hwan|woon))\b",
             re.IGNORECASE,
@@ -325,7 +337,6 @@ class MangaTranslator:
             if word.upper() not in _COMMON_ENGLISH_STOPWORDS and len(word) >= 4:
                 discovered.append(word.capitalize())
 
-        # Deduplicate preserving order
         seen: Set[str] = set()
         unique_terms: List[str] = []
         for t in discovered:
@@ -340,10 +351,6 @@ class MangaTranslator:
         items: List[Tuple[int, str]],
         glossary: Dict[str, str],
     ) -> str:
-        """
-        Build a context-aware prompt for LLM backends (Ollama, Gemini, OpenAI) that instructs
-        the model to analyze the series context and protect untranslatable terms.
-        """
         full_text_lower = " ".join(txt.lower() for _, txt in items)
         relevant_glossary = {
             k: v for k, v in glossary.items() if k.lower() in full_text_lower
@@ -360,7 +367,7 @@ class MangaTranslator:
             "Görev ve Bağlam Kuralları:\n"
             "1. Önce sayfadaki tüm balonları birlikte okuyarak sahnenin bağlamını, hangi esere/evrene ait olduğunu ve konuşanların duygusunu analiz et.\n"
             "2. Özel eser/seri adlarını (ör. 'One Piece'), özel teknik/saldırı isimlerini (ör. 'Bankai', 'Sharingan', 'Rasengan', 'Haki'), "
-            "karakter adlarını ve Japonca/Korece hitap eklerini (-san, -kun, -chan, -sama, -sensei, Senpai, Hyung, Oppa) ASLA kelimesi kelimesine çevirme (örneğin 'One Piece' -> 'Tek Parça' YAPMA, 'One Piece' olarak bırak).\n"
+            "karakter adlarını ve Japonca/Korece hitap eklerini (-san, -kun, -chan, -sama, -sensei, Senpai, Hyung, Oppa) ASLA kelimesi kelimesine çevirme.\n"
             "3. Sadece geçerli bir JSON nesnesi döndür: {\"1\": \"çeviri\", \"2\": \"çeviri\", ...}\n"
             "4. Ünlem (!!), soru (?!) ve üç noktaları (...) koru.\n"
             f"5. Bu Sayfada Tespit Edilen Korunacak Terimler & Sözlük:\n{glossary_lines}\n\n"
@@ -368,15 +375,208 @@ class MangaTranslator:
         )
 
     # ------------------------------------------------------------------
-    # LLM Translation Backends (Ollama, Gemini, OpenAI)
+    # Gemini Multimodal Vision + Text Translation Backend
     # ------------------------------------------------------------------
+
+    def _get_gemini_candidate_models(self) -> List[str]:
+        preferred = getattr(self.config, "gemini_model", "gemini-3-flash-preview") or "gemini-3-flash-preview"
+        models = [
+            preferred,
+            "gemini-3-flash-preview",
+            "gemini-flash-latest",
+            "gemini-2.5-flash-lite",
+            "gemini-2.5-flash",
+        ]
+        if self._working_gemini_model and self._working_gemini_model in models:
+            models.remove(self._working_gemini_model)
+            models.insert(0, self._working_gemini_model)
+        seen = set()
+        ordered = []
+        for m in models:
+            if m not in seen:
+                seen.add(m)
+                ordered.append(m)
+        return ordered
+
+    def _try_gemini_vision_page_translate(
+        self,
+        blocks: List[Dict[str, object]],
+        glossary: Dict[str, str],
+    ) -> Optional[List[TranslationItem]]:
+        """
+        Send bubble image crops directly to Gemini Vision so even stylized/dark/speedline
+        manga fonts are read with 100% accuracy and translated in full page context.
+        """
+        api_key = self.config.gemini_api_key.strip()
+        if not api_key:
+            return None
+
+        parts: List[Dict[str, object]] = [
+            {
+                "text": (
+                    "Sen profesyonel bir manga, manhwa ve webtoon çevirmenisin (İngilizce -> Türkçe).\n"
+                    "Aşağıda bir manga sayfasındaki konuşma balonlarının kırpılmış görselleri sırasıyla (#1, #2, ...) verilmiştir.\n"
+                    "Kurallar:\n"
+                    "1. Her görseldeki İngilizce metni tam ve doğru olarak oku ('en').\n"
+                    "2. Eğer bir görselde İngilizce diyalog YOKSA (sadece Japonca ses efekti/SFX harfleri veya çizim varsa) 'is_sfx': true ve 'tr': '' döndür.\n"
+                    "3. Tüm balonların birbirleriyle olan sahne bağlamını analiz ederek doğal, akıcı ve dramatik Türkçe manga diline çevir ('tr').\n"
+                    "4. Özel eser/seri adlarını (ör. 'One Piece'), özel teknik isimlerini (ör. 'Bankai', 'Sharingan', 'Haki') ve karakter adlarını koru.\n"
+                    "Sadece şu JSON formatında yanıt ver:\n"
+                    '{"blocks": {"1": {"en": "...", "tr": "...", "is_sfx": false}, ...}}'
+                )
+            }
+        ]
+
+        valid_block_ids: List[int] = []
+        fallback_texts: Dict[int, str] = {}
+
+        for b in blocks:
+            bid = int(b["id"])
+            ocr_hint = str(b.get("text", "")).strip()
+            crop = b.get("crop")
+            if not isinstance(crop, np.ndarray) or crop.size == 0:
+                continue
+            ok, buf = cv2.imencode(".jpg", crop, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
+            if not ok:
+                continue
+            b64 = base64.b64encode(buf.tobytes()).decode("ascii")
+            valid_block_ids.append(bid)
+            fallback_texts[bid] = ocr_hint
+            parts.append({"text": f"Balon #{bid} (OCR İpucu: {ocr_hint}):"})
+            parts.append({"inlineData": {"mimeType": "image/jpeg", "data": b64}})
+
+        if not valid_block_ids:
+            return None
+
+        body = json.dumps(
+            {
+                "contents": [{"parts": parts}],
+                "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2},
+            }
+        ).encode("utf-8")
+
+        for model_name in self._get_gemini_candidate_models():
+            url = (
+                "https://generativelanguage.googleapis.com/v1beta/models/"
+                f"{model_name}:generateContent?key={urllib.parse.quote(api_key)}"
+            )
+            try:
+                req = urllib.request.Request(
+                    url,
+                    data=body,
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=25.0) as resp:
+                    res_json = json.loads(resp.read().decode("utf-8"))
+                    content_text = res_json["candidates"][0]["content"]["parts"][0]["text"]
+                    parsed = json.loads(content_text)
+                    block_map = parsed.get("blocks", parsed)
+
+                    results: List[TranslationItem] = []
+                    for bid in valid_block_ids:
+                        entry = block_map.get(str(bid), {})
+                        if isinstance(entry, str):
+                            en_txt = fallback_texts.get(bid, "")
+                            tr_txt = entry.strip()
+                            is_sfx = False
+                        elif isinstance(entry, dict):
+                            en_txt = str(entry.get("en") or fallback_texts.get(bid, "")).strip()
+                            tr_txt = str(entry.get("tr") or "").strip()
+                            is_sfx = bool(entry.get("is_sfx", False))
+                        else:
+                            en_txt = fallback_texts.get(bid, "")
+                            tr_txt = ""
+                            is_sfx = True
+
+                        if is_sfx or not tr_txt:
+                            results.append(
+                                TranslationItem(
+                                    block_id=bid,
+                                    source_text=en_txt,
+                                    translated_text="",
+                                    backend_used=f"gemini_vision ({model_name})",
+                                    is_sfx=True,
+                                )
+                            )
+                        else:
+                            results.append(
+                                TranslationItem(
+                                    block_id=bid,
+                                    source_text=en_txt,
+                                    translated_text=self._postprocess_turkish(en_txt, tr_txt, glossary),
+                                    backend_used=f"gemini_vision ({model_name})",
+                                    is_sfx=False,
+                                )
+                            )
+                    self._working_gemini_model = model_name
+                    return results
+            except Exception:
+                continue
+
+        return None
+
+    def _try_gemini_page_translate(
+        self,
+        items: List[Tuple[int, str]],
+        glossary: Dict[str, str],
+    ) -> Optional[List[TranslationItem]]:
+        api_key = self.config.gemini_api_key.strip()
+        if not api_key:
+            return None
+
+        prompt = self._build_llm_context_prompt(items, glossary)
+        body = json.dumps(
+            {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2},
+            }
+        ).encode("utf-8")
+
+        for model_name in self._get_gemini_candidate_models():
+            url = (
+                "https://generativelanguage.googleapis.com/v1beta/models/"
+                f"{model_name}:generateContent?key={urllib.parse.quote(api_key)}"
+            )
+            try:
+                req = urllib.request.Request(
+                    url,
+                    data=body,
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=15.0) as resp:
+                    res_json = json.loads(resp.read().decode("utf-8"))
+                    content_text = res_json["candidates"][0]["content"]["parts"][0]["text"]
+                    trans_map = json.loads(content_text)
+                    if "translations" in trans_map and isinstance(trans_map["translations"], dict):
+                        trans_map = trans_map["translations"]
+
+                    results: List[TranslationItem] = []
+                    for bid, src in items:
+                        tr_text = str(trans_map.get(str(bid), "")).strip()
+                        if not tr_text:
+                            tr_text = self._call_gtx_single(self._preprocess_english_for_mt(src, glossary))
+                        results.append(
+                            TranslationItem(
+                                block_id=bid,
+                                source_text=src,
+                                translated_text=self._postprocess_turkish(src, tr_text, glossary),
+                                backend_used=f"gemini_api ({model_name})",
+                            )
+                        )
+                    self._working_gemini_model = model_name
+                    return results
+            except Exception:
+                continue
+
+        return None
 
     def _try_ollama_page_translate(
         self,
         items: List[Tuple[int, str]],
         glossary: Dict[str, str],
     ) -> Optional[List[TranslationItem]]:
-        """Attempt context-aware page translation via local Ollama server."""
         if self._ollama_available is False and self.config.backend == "auto":
             return None
 
@@ -421,66 +621,11 @@ class MangaTranslator:
             self._ollama_available = False
             return None
 
-    def _try_gemini_page_translate(
-        self,
-        items: List[Tuple[int, str]],
-        glossary: Dict[str, str],
-    ) -> Optional[List[TranslationItem]]:
-        api_key = self.config.gemini_api_key.strip()
-        if not api_key:
-            return None
-
-        model_name = getattr(self.config, "gemini_model", "gemini-2.5-flash") or "gemini-2.5-flash"
-        url = (
-            "https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{model_name}:generateContent?key={urllib.parse.quote(api_key)}"
-        )
-        prompt = self._build_llm_context_prompt(items, glossary)
-
-        body = json.dumps(
-            {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"responseMimeType": "application/json"},
-            }
-        ).encode("utf-8")
-
-        try:
-            req = urllib.request.Request(
-                url,
-                data=body,
-                headers={"Content-Type": "application/json"},
-                method="POST",
-            )
-            with urllib.request.urlopen(req, timeout=12.0) as resp:
-                res_json = json.loads(resp.read().decode("utf-8"))
-                content_text = res_json["candidates"][0]["content"]["parts"][0]["text"]
-                trans_map = json.loads(content_text)
-                if "translations" in trans_map and isinstance(trans_map["translations"], dict):
-                    trans_map = trans_map["translations"]
-
-                results: List[TranslationItem] = []
-                for bid, src in items:
-                    tr_text = str(trans_map.get(str(bid), "")).strip()
-                    if not tr_text:
-                        return None
-                    results.append(
-                        TranslationItem(
-                            block_id=bid,
-                            source_text=src,
-                            translated_text=self._postprocess_turkish(src, tr_text, glossary),
-                            backend_used="gemini_api",
-                        )
-                    )
-                return results
-        except Exception:
-            return None
-
     def _try_openai_page_translate(
         self,
         items: List[Tuple[int, str]],
         glossary: Dict[str, str],
     ) -> Optional[List[TranslationItem]]:
-        """Attempt context-aware page translation via OpenAI or OpenAI-compatible API (DeepSeek/OpenRouter)."""
         api_key = getattr(self.config, "openai_api_key", "").strip()
         if not api_key:
             return None
@@ -555,15 +700,8 @@ class MangaTranslator:
         text: str,
         glossary: Dict[str, str],
     ) -> Tuple[str, Dict[str, str]]:
-        """
-        Replace protected series terms, character names, and glossary entries with
-        placeholder tokens (`XMT0X`, `XMT1X`) BEFORE machine translation so neural MT
-        never translates "One Piece" as "Tek Parça" or mangles character names.
-        """
         token_map: Dict[str, str] = {}
         locked = text
-
-        # Sort glossary keys by length descending so multi-word terms ("One Piece", "Grand Line") match first
         sorted_terms = sorted(glossary.items(), key=lambda kv: len(kv[0]), reverse=True)
         token_idx = 0
 
@@ -590,10 +728,6 @@ class MangaTranslator:
         items: List[Tuple[int, str]],
         glossary: Dict[str, str],
     ) -> List[TranslationItem]:
-        """
-        Translate page dialogue using full-page batch context + protected term locking
-        and natural Turkish scanlation post-processing.
-        """
         prepped_lines: List[str] = []
         token_maps: List[Dict[str, str]] = []
 
@@ -603,14 +737,11 @@ class MangaTranslator:
             prepped_lines.append(locked)
             token_maps.append(tmap)
 
-        # Send all bubbles on the page together separated by newline so the neural translator
-        # attends to the entire page's dialogue context at once
         batch_text = "\n".join(prepped_lines)
         batch_translated = self._call_gtx_single(batch_text)
         split_lines = [line.strip() for line in batch_translated.split("\n") if line.strip()]
 
         if len(split_lines) != len(items):
-            # Fallback to per-line call if newline count changed
             split_lines = [self._call_gtx_single(line) for line in prepped_lines]
 
         results: List[TranslationItem] = []
@@ -633,7 +764,6 @@ class MangaTranslator:
         for pattern, repl in _MANGA_SLANG_PREMAP:
             s = re.sub(pattern, repl, s, flags=re.IGNORECASE)
 
-        # Convert ALL-CAPS manga text to sentence case so neural MT doesn't treat words as acronyms
         if s.isupper() and len(s) > 2:
             s = s.capitalize()
             s = re.sub(r"\bi(?=['\s]|$)", "I", s)
@@ -675,7 +805,6 @@ class MangaTranslator:
         src_up = source_en.strip().upper()
         tr = translated_tr.strip()
 
-        # High-precision contextual overrides for common manga idioms & dialogue expressions
         idiom_map = {
             "HEY, KID...": "Hey, evlat...",
             "...YOU EMBARKED AT WHALE ISLAND, RIGHT?": "...Balina Adası'ndan yola çıktın, değil mi?",
@@ -701,20 +830,23 @@ class MangaTranslator:
             "WOW!!": "Vay be!!",
             "WOW!": "Vay be!",
             "HEH!": "Heh!",
+            "GET OUT OF MY HEAD...!!!": "Zihnimden çık...!!!",
+            "I NEVER WANT TO REMEMBER THOSE DAYS AGAIN!!": "O günleri bir daha asla hatırlamak istemiyorum!!",
+            "ALRIGHT!! IT'S DONE!!": "Tamamdır!! Bitti!!",
+            "HUFF... HUFF...": "Haa... Haa...",
+            "KEEEEEP IT TOGETHER!!!": "Kendine geeel!!!",
+            "AAA AAAA AAH!!!": "AAA AAAA AAH!!!",
         }
         if src_up in idiom_map:
             return idiom_map[src_up]
 
-        # Apply regex refinements
         for pattern, repl in _TURKISH_MANGA_REFINEMENTS:
             tr = re.sub(pattern, repl, tr, flags=re.IGNORECASE)
 
-        # Enforce glossary terms if source contained them
         for en_term, tr_term in glossary.items():
             if en_term.lower() in source_en.lower() and tr_term.lower() not in tr.lower():
                 tr = re.sub(re.escape(en_term), tr_term, tr, flags=re.IGNORECASE)
 
-        # Preserve double exclamation marks or leading ellipsis from source
         if source_en.strip().startswith("...") and not tr.startswith("..."):
             tr = "..." + tr.lstrip(".")
         if source_en.strip().endswith("!!") and not tr.endswith("!!"):

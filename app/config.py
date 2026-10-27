@@ -62,7 +62,7 @@ class DetectorConfig:
     model_url: str = DETECTOR_MODEL_URL
     auto_download_model: bool = True
     input_size: int = 1024
-    conf_thresh: float = 0.38
+    conf_thresh: float = 0.35
     nms_thresh: float = 0.35
     iou_dup_thresh: float = 0.42
     contain_dup_thresh: float = 0.68
@@ -74,7 +74,7 @@ class DetectorConfig:
 class OCRConfig:
     languages: List[str] = field(default_factory=lambda: ["en"])
     gpu: bool = True
-    scale: float = 2.2
+    scale: float = 1.8
     block_padding: int = 6
     line_padding: int = 5
     use_line_level_ocr: bool = True
@@ -102,7 +102,9 @@ class TranslatorConfig:
     openai_api_key: str = field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""))
     openai_model: str = field(default_factory=lambda: os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
     gemini_api_key: str = field(default_factory=lambda: os.getenv("GEMINI_API_KEY", ""))
-    gemini_model: str = field(default_factory=lambda: os.getenv("GEMINI_MODEL", "gemini-2.5-flash"))
+    gemini_model: str = field(
+        default_factory=lambda: os.getenv("GEMINI_MODEL", "gemini-3-flash-preview")
+    )
     glossary: Dict[str, str] = field(default_factory=lambda: dict(DEFAULT_GLOSSARY))
 
 
