@@ -13,7 +13,10 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-import requests
+try:
+    import requests
+except ImportError:
+    requests = None
 import torch
 import torch.nn as nn
 from PIL import Image
